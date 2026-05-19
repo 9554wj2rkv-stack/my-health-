@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+  <meta name="apple-mobile-web-app-title" content="My Health"/>
+  <title>My Health</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body { margin: 0; padding: 0; background: #f7f7f5; font-family: 'DM Sans', sans-serif; }
+    input[type=range] { -webkit-appearance: none; appearance: none; height: 4px; border-radius: 2px; background: #e0e0e0; outline: none; }
+    input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; border-radius: 50%; background: #111; cursor: pointer; }
+    input:focus, textarea:focus, button:focus { outline: none; }
+    ::-webkit-scrollbar { display: none; }
+    * { scrollbar-width: none; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+const CYCLE_PHASES = [
+  { name:"Menstrual", days:[1,5], color:"#c0392b", emoji:"🔴",
+    exercise:"Gentle movement — yoga, stretching, short walks. Honor rest.",
+    food:"Iron-rich foods: lentils, leafy greens, red meat. Warm, nourishing meals.",
+    supplements:"Iron, Magnesium, Vitamin C to aid iron absorption.",
+    sleep:"Prioritize extra sleep. Your body is working hard." },
+  { name:"Follicular", days:[6,13], color:"#27ae60", emoji:"🌱",
+    exercise:"Energy is rising — great for strength training, cardio, trying new workouts.",
+    food:"Lighter foods: salads, lean proteins, fermented foods for gut health.",
+    supplements:"B vitamins, Zinc, Probiotics.",
+    sleep:"Sleep quality improves. Still aim for 7–9 hrs." },
+  { name:"Ovulation", days:[14,16], color:"#f39c12", emoji:"✨",
+    exercise:"Peak energy — push yourself. HIIT, heavy lifts, competitive sports.",
+    food:"Anti-inflammatory: berries, flaxseed, fiber-rich veg. Stay hydrated.",
+    supplements:"Vitamin E, Antioxidants, Omega-3.",
+    sleep:"May notice lighter sleep. Wind down well." },
+  { name:"Luteal", days:[17,28], color:"#8e44ad", emoji:"🌙",
+    exercise:"Slow down gradually. Pilates, swimming, moderate walks. Listen to your body.",
+    food:"Complex carbs, magnesium-rich foods: dark chocolate, pumpkin seeds, bananas.",
+    supplements:"Magnesium, Vitamin B6, Evening Primrose Oil.",
+    sleep:"Sleep may be disrupted pre-period. Limit screens, caffeine after noon." },
+];
+
+const TABS = ["Home","Log","Sleep","Fitness","Body","Insights","Weekly","Monthly"];
+const STORAGE_KEY = "my_health_tracker_v1";
+const F = "'DM Sans', sans-serif";
+const FS = "'Playfair Display', serif";
+
+function getCyclePhase(day) {
+  for (const p of CYCLE_PHASES) if (day >= p.days[0] && day <= p.days[1]) return p;
+  return CYCLE_PHASES[3];
+}
+
+const todayStr = () => new Date().toISOString().split("T")[0];
+
+function offsetDate(offset) {
+  const d = new Date(); d.setDate(d.getDate() + offset);
+  return d.toISOString().split("T")[0];
+}
+
+function formatDateLabel(dateStr) {
+  const t = todayStr(), y = offsetDate(-1);
+  if (dateStr === t) return "Today";
+  if (dateStr === y) return "Yesterday";
+  const d = new Date(dateStr + "T00:00:00");
+  return d.toLocaleDateString("default", { weekday:"short", month:"short", day:"numeric" });
+}
+
+function formatDateFull(dateStr) {
+  const d = new Date(dateStr + "T00:00:00");
+  return d.toLocaleDateString("default", { weekday:"long", month:"long", day:"numeric" });
+}
+
+const pct = val => { const n = parseFloat(val); return isNaN(n) ? 0 : n; };
+
+function avg(arr, key) {
+  const vals = arr.map(d => parseFloat(d[key])).filter(v => !isNaN(v));
+  if (!vals.length) return null;
+  return (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1);
+}
+
+function sumArr(arr, key) {
+  return arr.map(d => parseFloat(d[key])).filter(v => !isNaN(v)).reduce((a,b)=>a+b,0);
+}
+
+const countYes = (arr, key) => arr.filter(d => d[key] === true).length;
+
+function loadData() {
+  try { const r = localStorage.getItem(STORAGE_KEY); return r ? JSON.parse(r) : {}; }
+  catch { return {}; }
+}
+
+function saveData(data) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {}
+}
+
+function emptyDay() {
+  return {
+    sleep:{ hrs:"", mins:"", rem:"", deep:"", light:"", awake:"" },
+    fitness:{ gym:null, steps:"", restDay:false, walk:null, water:"" },
+    body:{ cycleDay:"", weight:"", height:"", mood:"", energy:"", periodStart:false },
+    notes:"", morningNote:"", eveningNote:"", photos:[],
+  };
+}
+
+function calcLogStreak(data) {
+  let streak = 0; const d = new Date();
+  for (let i = 0; i < 365; i++) {
+    const k = d.toISOString().split("T")[0];
+    if (data[k]) { streak++; d.setDate(d.getDate()-1); } else break;
+  }
+  return streak;
+}
+
+function calcGymStreak(data) {
+  let streak = 0; const d = new Date();
+  for (let i = 0; i < 365; i++) {
+    const k = d.toISOString().split("T")[0];
+    const entry = data[k];
+    if (!entry) { d.setDate(d.getDate()-1); if(i>0) break; continue; }
+    if (entry.fitness?.gym === true) { streak++; d.setDate(d.getDate()-1); } else break;
+  }
+  return streak;
+}
+
+function calcWaterStreak(data, target=4) {
+  let streak = 0; const d = new Date();
+  for (let i = 0; i < 365; i++) {
+    const k = d.toISOString().split("T")[0];
+    const entry = data[k];
+    if (entry && parseInt(entry.fitness?.water||0) >= target) { streak++; d.setDate(d.getDate()-1); } else break;
+  }
+  return streak;
+}
+
+function inferCycleDay(data, selectedDate) {
+  const allDates = Object.keys(data).sort();
+  let lastPeriodDate = null;
+  for (const d of allDates) {
+    if (d > selectedDate) break;
+    if (data[d]?.body?.periodStart) lastPeriodDate = d;
+  }
+  if (!lastPeriodDate) return null;
+  const diff = Math.round((new Date(selectedDate) - new Date(lastPeriodDate)) / 86400000) + 1;
+  return Math.min(diff, 35);
+}
+
+function generateInsights(data) {
+  const insights = [];
+  const entries = Object.entries(data).sort(([a],[b])=>a.localeCompare(b));
+  if (entries.length < 5) return [];
+
+  const walkSleep = entries.filter(([,d])=>d.fitness?.walk===true&&d.sleep?.hrs).map(([,d])=>parseFloat(d.sleep.hrs)).filter(v=>!isNaN(v));
+  const noWalkSleep = entries.filter(([,d])=>d.fitness?.walk===false&&d.sleep?.hrs).map(([,d])=>parseFloat(d.sleep.hrs)).filter(v=>!isNaN(v));
+  if (walkSleep.length>=3&&noWalkSleep.length>=3) {
+    const wA=walkSleep.reduce((a,b)=>a+b,0)/walkSleep.length, nA=noWalkSleep.reduce((a,b)=>a+b,0)/noWalkSleep.length;
+    if (wA-nA>0.3) insights.push({ icon:"🚶", text:`You sleep ${(wA-nA).toFixed(1)} hrs more on days you walk outside.` });
+  }
+
+  const phaseEnergy = {};
+  for (const [,d] of entries) {
+    const cd=parseInt(d.body?.cycleDay), en=parseFloat(d.body?.energy);
+    if (!isNaN(cd)&&!isNaN(en)) { const ph=getCyclePhase(cd).name; if(!phaseEnergy[ph])phaseEnergy[ph]=[]; phaseEnergy[ph].push(en); }
+  }
+  const phaseAvgs = Object.entries(phaseEnergy).filter(([,v])=>v.length>=2).map(([ph,vals])=>({ph,avg:vals.reduce((a,b)=>a+b,0)/vals.length})).sort((a,b)=>b.avg-a.avg);
+  if (phaseAvgs.length>=2) insights.push({ icon:"⚡", text:`Your energy peaks in ${phaseAvgs[0].ph} (avg ${phaseAvgs[0].avg.toFixed(1)}/10) and dips in ${phaseAvgs[phaseAvgs.length-1].ph} (avg ${phaseAvgs[phaseAvgs.length-1].avg.toFixed(1)}/10).` });
+
+  const gymMoods=entries.filter(([,d])=>d.fitness?.gym===true&&d.body?.mood).map(([,d])=>parseFloat(d.body.mood)).filter(v=>!isNaN(v));
+  const noGymMoods=entries.filter(([,d])=>d.fitness?.gym===false&&d.body?.mood).map(([,d])=>parseFloat(d.body.mood)).filter(v=>!isNaN(v));
+  if (gymMoods.length>=3&&noGymMoods.length>=3) {
+    const gA=gymMoods.reduce((a,b)=>a+b,0)/gymMoods.length, nA=noGymMoods.reduce((a,b)=>a+b,0)/noGymMoods.length;
+    if (gA-nA>0.5) insights.push({ icon:"🏋️", text:`Your mood is ${(gA-nA).toFixed(1)} pts higher on gym days.` });
+  }
+
+  const sleepHrs=entries.filter(([,d])=>d.sleep?.hrs).map(([,d])=>parseFloat(d.sleep.hrs)).filter(v=>!isNaN(v));
+  if (sleepHrs.length>=7) {
+    const sA=(sleepHrs.reduce((a,b)=>a+b,0)/sleepHrs.length).toFixed(1);
+    insights.push({ icon:"😴", text:parseFloat(sA)<7?`Your avg sleep is ${sA} hrs. Aim for 7–9 hrs for optimal recovery.`:`Great — you average ${sA} hrs of sleep. Keep it consistent.` });
+  }
+
+  const waterDays=entries.filter(([,d])=>parseInt(d.fitness?.water||0)>=4).length;
+  if (entries.length>=5) {
+    const p=Math.round((waterDays/entries.length)*100);
+    insights.push({ icon:"💧", text:p>=70?`You hit your water goal ${p}% of days. Excellent hydration habit.`:`You hit your water goal only ${p}% of days. Keep a bottle visible as a reminder.` });
+  }
+
+  return insights.slice(0,6);
+}
+
+function exportCSV(data) {
+  const rows=[["Date","Sleep Hrs","Sleep Mins","REM%","Deep%","Light%","Awake%","Gym","Steps","Rest Day","Walk","Water","Cycle Day","Period Start","Weight","Height","Mood","Energy","Morning Note","Evening Note","Notes"]];
+  for (const [date,d] of Object.entries(data).sort(([a],[b])=>a.localeCompare(b))) {
+    rows.push([date,d.sleep?.hrs||"",d.sleep?.mins||"",d.sleep?.rem||"",d.sleep?.deep||"",d.sleep?.light||"",d.sleep?.awake||"",
+      d.fitness?.gym===true?"Yes":d.fitness?.gym===false?"No":"",d.fitness?.steps||"",d.fitness?.restDay?"Yes":"No",
+      d.fitness?.walk===true?"Yes":d.fitness?.walk===false?"No":"",d.fitness?.water||"",
+      d.body?.cycleDay||"",d.body?.periodStart?"Yes":"",d.body?.weight||"",d.body?.height||"",d.body?.mood||"",d.body?.energy||"",
+      `"${(d.morningNote||"").replace(/"/g,'""')}"`,`"${(d.eveningNote||"").replace(/"/g,'""')}"`,`"${(d.notes||"").replace(/"/g,'""')}"`,
+    ]);
+  }
+  const csv=rows.map(r=>r.join(",")).join("\n");
+  const blob=new Blob([csv],{type:"text/csv"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a"); a.href=url; a.download="my-health-data.csv"; a.click(); URL.revokeObjectURL(url);
+}
+
+// ── UI Primitives ────────────────────────────────────────────────
+
+function Label({children}) {
+  return <p style={{fontSize:11,letterSpacing:"0.08em",textTransform:"uppercase",color:"#999",marginBottom:6,fontFamily:F}}>{children}</p>;
+}
+function Card({children,style={}}) {
+  return <div style={{background:"#fff",border:"1px solid #ebebeb",borderRadius:16,padding:"20px 22px",marginBottom:14,...style}}>{children}</div>;
+}
+function SectionTitle({children}) {
+  return <p style={{fontFamily:FS,fontSize:17,color:"#111",marginBottom:14,marginTop:4}}>{children}</p>;
+}
+function NumInput({value,onChange,placeholder,min=0,max,style={}}) {
+  return <input type="number" value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} min={min} max={max}
+    style={{border:"1px solid #e0e0e0",borderRadius:10,padding:"9px 13px",fontSize:14,fontFamily:F,color:"#111",background:"#fafafa",width:"100%",boxSizing:"border-box",outline:"none",...style}}/>;
+}
+function TextArea({value,onChange,placeholder}) {
+  return <textarea value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} rows={3}
+    style={{border:"1px solid #e0e0e0",borderRadius:10,padding:"9px 13px",fontSize:13,fontFamily:F,color:"#111",background:"#fafafa",width:"100%",boxSizing:"border-box",outline:"none",resize:"vertical",lineHeight:1.5}}/>;
+}
+function YesNo({value,onChange}) {
+  const btn=(label,val)=>(
+    <button onClick={()=>onChange(val)} style={{flex:1,padding:"9px 0",borderRadius:10,border:`1.5px solid ${value===val?"#111":"#e0e0e0"}`,background:value===val?"#111":"#fafafa",color:value===val?"#fff":"#555",fontFamily:F,fontSize:13,cursor:"pointer",fontWeight:value===val?600:400}}>
+      {label}
+    </button>
+  );
+  return <div style={{display:"flex",gap:8}}>{btn("Yes",true)}{btn("No",false)}</div>;
+}
+function Slider({value,onChange,min=1,max=10}) {
+  return (
+    <div style={{display:"flex",alignItems:"center",gap:12}}>
+      <input type="range" min={min} max={max} value={value||min} onChange={e=>onChange(e.target.value)} style={{flex:1,accentColor:"#111"}}/>
+      <span style={{fontFamily:F,fontSize:18,fontWeight:700,color:"#111",minWidth:28,textAlign:"center"}}>{value||"–"}</span>
+    </div>
+  );
+}
+function StatRow({label,value,unit=""}) {
+  return (
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"9px 0",borderBottom:"1px solid #f0f0f0"}}>
+      <span style={{fontFamily:F,fontSize:13,color:"#666"}}>{label}</span>
+      <span style={{fontFamily:F,fontSize:14,fontWeight:600,color:"#111"}}>{value!=null?value:"–"}{value!=null&&unit?" "+unit:""}</span>
+    </div>
+  );
+}
+function StreakBadge({count,label,icon}) {
+  const active=count>0;
+  return (
+    <div style={{flex:1,background:active?"#111":"#fafafa",border:`1.5px solid ${active?"#111":"#e8e8e8"}`,borderRadius:14,padding:"14px 10px",textAlign:"center"}}>
+      <div style={{fontSize:22,marginBottom:4}}>{icon}</div>
+      <div style={{fontFamily:F,fontSize:26,fontWeight:700,color:active?"#fff":"#bbb"}}>{count}</div>
+      <div style={{fontFamily:F,fontSize:10,color:active?"rgba(255,255,255,0.6)":"#bbb",letterSpacing:"0.06em",textTransform:"uppercase",marginTop:2}}>{label}</div>
+    </div>
+  );
+}
+
+function SleepDonut({rem,deep,light,awake}) {
+  const total=rem+deep+light+awake||1;
+  const segs=[{val:rem,color:"#5b6af0",label:"REM"},{val:deep,color:"#111",label:"Deep"},{val:light,color:"#a8b4ff",label:"Light"},{val:awake,color:"#f0c060",label:"Awake"}];
+  let angle=-90; const cx=60,cy=60,r=50,inn=30;
+  const arcs=segs.map(s=>{
+    const sweep=(s.val/total)*360,start=angle; angle+=sweep;
+    const rad=deg=>(deg*Math.PI)/180;
+    const [x1,y1]=[cx+r*Math.cos(rad(start)),cy+r*Math.sin(rad(start))];
+    const [x2,y2]=[cx+r*Math.cos(rad(start+sweep)),cy+r*Math.sin(rad(start+sweep))];
+    const [xi1,yi1]=[cx+inn*Math.cos(rad(start)),cy+inn*Math.sin(rad(start))];
+    const [xi2,yi2]=[cx+inn*Math.cos(rad(start+sweep)),cy+inn*Math.sin(rad(start+sweep))];
+    return {...s,sweep,d:`M ${x1} ${y1} A ${r} ${r} 0 ${sweep>180?1:0} 1 ${x2} ${y2} L ${xi2} ${yi2} A ${inn} ${inn} 0 ${sweep>180?1:0} 0 ${xi1} ${yi1} Z`};
+  });
+  if(!rem&&!deep&&!light&&!awake) return null;
+  return (
+    <div style={{display:"flex",alignItems:"center",gap:20,marginTop:12}}>
+      <svg width={120} height={120} viewBox="0 0 120 120">
+        {arcs.map((a,i)=>a.sweep>0&&<path key={i} d={a.d} fill={a.color}/>)}
+      </svg>
+      <div>{segs.map((s,i)=>(
+        <div key={i} style={{display:"flex",alignItems:"center",gap:7,marginBottom:5}}>
+          <div style={{width:10,height:10,borderRadius:3,background:s.color}}/>
+          <span style={{fontFamily:F,fontSize:12,color:"#555"}}>{s.label} — {Math.round((s.val/total)*100)}%</span>
+        </div>
+      ))}</div>
+    </div>
+  );
+}
+
+function MiniLineChart({data:points,color="#111",height=60}) {
+  if(!points||points.length<2) return <p style={{fontFamily:F,fontSize:12,color:"#ccc",textAlign:"center",padding:"20px 0"}}>Not enough data yet</p>;
+  const vals=points.map(p=>p.y);
+  const min=Math.min(...vals),max=Math.max(...vals),range=max-min||1;
+  const W=280,H=height,pad=8;
+  const xs=points.map((_,i)=>pad+(i/(points.length-1))*(W-pad*2));
+  const ys=points.map(p=>H-pad-((p.y-min)/range)*(H-pad*2));
+  const path=xs.map((x,i)=>`${i===0?"M":"L"} ${x} ${ys[i]}`).join(" ");
+  const fill=path+` L ${xs[xs.length-1]} ${H} L ${xs[0]} ${H} Z`;
+  const gId=`g${color.replace(/[^a-z0-9]/gi,"")}`;
+  return (
+    <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{overflow:"visible"}}>
+      <defs><linearGradient id={gId} x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor={color} stopOpacity="0.15"/>
+        <stop offset="100%" stopColor={color} stopOpacity="0"/>
+      </linearGradient></defs>
+      <path d={fill} fill={`url(#${gId})`}/>
+      <path d={path} fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/>
+      {points.map((p,i)=><circle key={i} cx={xs[i]} cy={ys[i]} r={3} fill={color}/>)}
+    </svg>
+  );
+}
+
+function PhotoLogger({photos=[],onAdd,onRemove}) {
+  const inputRef=useRef();
+  function handleFile(e) {
+    const file=e.target.files[0]; if(!file) return;
+    const reader=new FileReader();
+    reader.onload=ev=>onAdd({src:ev.target.result,ts:Date.now()});
+    reader.readAsDataURL(file); e.target.value="";
+  }
+  return (
+    <div>
+      <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:10}}>
+        {photos.map((p,i)=>(
+          <div key={i} style={{position:"relative"}}>
+            <img src={p.src} alt="" style={{width:72,height:72,objectFit:"cover",borderRadius:10,border:"1px solid #e0e0e0"}}/>
+            <button onClick={()=>onRemove(i)} style={{position:"absolute",top:-6,right:-6,width:20,height:20,borderRadius:"50%",background:"#111",color:"#fff",border:"none",fontSize:11,cursor:"pointer"}}>×</button>
+          </div>
+        ))}
+        <button onClick={()=>inputRef.current.click()} style={{width:72,height:72,borderRadius:10,border:"1.5px dashed #d0d0d0",background:"#fafafa",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:4}}>
+          <span style={{fontSize:20}}>📷</span>
+          <span style={{fontFamily:F,fontSize:10,color:"#aaa"}}>Add</span>
+        </button>
+      </div>
+      <input ref={inputRef} type="file" accept="image/*" onChange={handleFile} style={{display:"none"}}/>
+    </div>
+  );
+}
+
+// ── Home Tab ─────────────────────────────────────────────────────
+
+function HomeTab({data,setTab}) {
+  const t=todayStr(), td=data[t]||emptyDay();
+  const logStreak=calcLogStreak(data), gymStreak=calcGymStreak(data), waterStreak=calcWaterStreak(data);
+  const manualCD=parseInt(td.body?.cycleDay), inferredCD=inferCycleDay(data,t);
+  const cycleDay=!isNaN(manualCD)?manualCD:inferredCD;
+  const phase=cycleDay?getCyclePhase(cycleDay):null;
+  const hour=new Date().getHours();
+  const greeting=hour<12?"Good morning":hour<17?"Good afternoon":"Good evening";
+  const allEntries=Object.entries(data).sort(([a],[b])=>a.localeCompare(b));
+  const last7=allEntries.slice(-7);
+  const moodPts=last7.filter(([,d])=>d.body?.mood).map(([date,d])=>({x:date,y:parseFloat(d.body.mood)}));
+  const sleepPts=last7.filter(([,d])=>d.sleep?.hrs).map(([date,d])=>({x:date,y:parseFloat(d.sleep.hrs)}));
+  const logged=!!data[t], showReminder=!logged&&hour>=19;
+
+  return (
+    <div>
+      <div style={{marginBottom:16}}>
+        <p style={{fontFamily:FS,fontSize:24,color:"#111",margin:0}}>{greeting} 👋</p>
+        <p style={{fontFamily:F,fontSize:13,color:"#aaa",margin:"4px 0 0"}}>{formatDateFull(t)}</p>
+      </div>
+
+      {showReminder&&(
+        <Card style={{background:"#111",borderColor:"#111"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <div>
+              <p style={{fontFamily:FS,fontSize:15,color:"#fff",margin:0}}>Time to log your day</p>
+              <p style={{fontFamily:F,fontSize:12,color:"rgba(255,255,255,0.55)",margin:"4px 0 0"}}>You haven't logged today yet.</p>
+            </div>
+            <button onClick={()=>setTab(1)} style={{background:"#fff",color:"#111",border:"none",borderRadius:10,padding:"8px 14px",fontFamily:F,fontSize:12,fontWeight:600,cursor:"pointer"}}>Log now →</button>
+          </div>
+        </Card>
+      )}
+
+      {phase&&(
+        <Card style={{borderLeft:`4px solid ${phase.color}`,background:`${phase.color}08`}}>
+          <p style={{fontFamily:F,fontSize:11,letterSpacing:"0.08em",textTransform:"uppercase",color:phase.color,margin:"0 0 4px"}}>Cycle · Day {cycleDay}</p>
+          <p style={{fontFamily:FS,fontSize:20,color:"#111",margin:"0 0 12px"}}>{phase.emoji} {phase.name} Phase</p>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+            {[["🏋️ Exercise",phase.exercise],["🥗 Food",phase.food],["💊 Supps",phase.supplements],["😴 Sleep",phase.sleep]].map(([k,v])=>(
+              <div key={k} style={{background:"rgba(255,255,255,0.8)",borderRadius:10,padding:"10px 12px"}}>
+                <p style={{fontFamily:F,fontSize:11,fontWeight:600,color:phase.color,margin:"0 0 4px"}}>{k}</p>
+                <p style={{fontFamily:F,fontSize:11,color:"#555",margin:0,lineHeight:1.4}}>{v}</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      <Card>
+        <SectionTitle>Streaks 🔥</SectionTitle>
+        <div style={{display:"flex",gap:8}}>
+          <StreakBadge count={logStreak} label="Days logged" icon="📓"/>
+          <StreakBadge count={gymStreak} label="Gym" icon="🏋️"/>
+          <StreakBadge count={waterStreak} label="Water goal" icon="💧"/>
+        </div>
+      </Card>
+
+      <Card>
+        <SectionTitle>Today at a Glance</SectionTitle>
+        <StatRow label="Mood" value={td.body?.mood||null} unit="/10"/>
+        <StatRow label="Energy" value={td.body?.energy||null} unit="/10"/>
+        <StatRow label="Sleep" value={td.sleep?.hrs?`${td.sleep.hrs}h ${td.sleep.mins||0}m`:null}/>
+        <StatRow label="Steps" value={td.fitness?.steps?parseInt(td.fitness.steps).toLocaleString():null}/>
+        <StatRow label="Water" value={td.fitness?.water?`${parseInt(td.fitness.water)} × 500ml`:null}/>
+        <StatRow label="Gym" value={td.fitness?.gym===true?"✓ Yes":td.fitness?.gym===false?"✗ No":null}/>
+      </Card>
+
+      {moodPts.length>=2&&<Card><SectionTitle>Mood — Last 7 Days</SectionTitle><MiniLineChart data={moodPts} color="#5b6af0"/></Card>}
+      {sleepPts.length>=2&&<Card><SectionTitle>Sleep — Last 7 Days</SectionTitle><MiniLineChart data={sleepPts} color="#111"/></Card>}
+
+      {!logged&&!showReminder&&(
+        <button onClick={()=>setTab(1)} style={{width:"100%",padding:"14px",borderRadius:14,border:"1.5px solid #111",background:"transparent",color:"#111",fontFamily:F,fontSize:14,fontWeight:600,cursor:"pointer"}}>
+          + Log today
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ── Log Tab ──────────────────────────────────────────────────────
+
+function LogTab({data,setData,selectedDate,dayOffset,goDay}) {
+  const d=data[selectedDate]||emptyDay();
+
+  function update(section,key,val) {
+    const prev=data[selectedDate]||emptyDay();
+    setData({...data,[selectedDate]:{...prev,[section]:{...prev[section],[key]:val}}});
+  }
+  function updateTop(key,val) {
+    const prev=data[selectedDate]||emptyDay();
+    setData({...data,[selectedDate]:{...prev,[key]:val}});
+  }
+  function updatePhoto(action,photoOrIdx) {
+    const prev=data[selectedDate]||emptyDay();
+    const photos=prev.photos||[];
+    const next=action==="add"?[...photos,photoOrIdx]:photos.filter((_,i)=>i!==photoOrIdx);
+    setData({...data,[selectedDate]:{...prev,photos:next}});
+  }
+
+  const inferredCD=inferCycleDay(data,selectedDate);
+  const cycleDay=d.body.cycleDay||inferredCD;
+  const phase=cycleDay?getCyclePhase(parseInt(cycleDay)):null;
+
+  return (
+    <div>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+        <button onClick={()=>goDay(-1)} style={{width:36,height:36,borderRadius:10,border:"1.5px solid #e0e0e0",background:"#fff",fontSize:16,cursor:"pointer"}}>‹</button>
+        <div style={{background:dayOffset===0?"#111":"#f0f0f0",borderRadius:12,padding:"6px 18px",textAlign:"center"}}>
+          <p style={{fontFamily:F,fontSize:14,fontWeight:600,color:dayOffset===0?"#fff":"#111",margin:0}}>{formatDateLabel(selectedDate)}</p>
+          {dayOffset!==0&&<p style={{fontFamily:F,fontSize:11,color:"#888",margin:"2px 0 0"}}>{selectedDate}</p>}
+        </div>
+        <button onClick={()=>goDay(1)} disabled={dayOffset>=0} style={{width:36,height:36,borderRadius:10,border:"1.5px solid #e0e0e0",background:"#fff",fontSize:16,cursor:dayOffset>=0?"default":"pointer",opacity:dayOffset>=0?0.25:1}}>›</button>
+      </div>
+
+      <Card>
+        <SectionTitle>🌅 Morning Note</SectionTitle>
+        <TextArea value={d.morningNote||""} onChange={v=>updateTop("morningNote",v)} placeholder="How are you feeling this morning? Intentions for the day..."/>
+      </Card>
+
+      <Card>
+        <SectionTitle>🌙 Sleep</SectionTitle>
+        <Label>Duration</Label>
+        <div style={{display:"flex",gap:8,marginBottom:14}}>
+          <NumInput value={d.sleep.hrs} onChange={v=>update("sleep","hrs",v)} placeholder="hrs" max={24}/>
+          <NumInput value={d.sleep.mins} onChange={v=>update("sleep","mins",v)} placeholder="mins" max={59}/>
+        </div>
+        <Label>Sleep Stages (%)</Label>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+          {[["rem","REM %"],["deep","Deep %"],["light","Light %"],["awake","Awake %"]].map(([k,lbl])=>(
+            <div key={k}>
+              <p style={{fontFamily:F,fontSize:12,color:"#888",marginBottom:4}}>{lbl}</p>
+              <NumInput value={d.sleep[k]} onChange={v=>update("sleep",k,v)} placeholder="0" max={100}/>
+            </div>
+          ))}
+        </div>
+        {(pct(d.sleep.rem)+pct(d.sleep.deep)+pct(d.sleep.light)+pct(d.sleep.awake))>0&&(
+          <SleepDonut rem={pct(d.sleep.rem)} deep={pct(d.sleep.deep)} light={pct(d.sleep.light)} awake={pct(d.sleep.awake)}/>
+        )}
+      </Card>
+
+      <Card>
+        <SectionTitle>🏃 Fitness</SectionTitle>
+        <Label>Gym today?</Label>
+        <div style={{marginBottom:14}}><YesNo value={d.fitness.gym} onChange={v=>update("fitness","gym",v)}/></div>
+        <Label>Rest day?</Label>
+        <div style={{marginBottom:14}}>
+          <button onClick={()=>update("fitness","restDay",!d.fitness.restDay)}
+            style={{padding:"9px 20px",borderRadius:10,border:`1.5px solid ${d.fitness.restDay?"#111":"#e0e0e0"}`,background:d.fitness.restDay?"#111":"#fafafa",color:d.fitness.restDay?"#fff":"#555",fontFamily:F,fontSize:13,cursor:"pointer"}}>
+            {d.fitness.restDay?"✓ Rest Day":"Mark as Rest Day"}
+          </button>
+        </div>
+        <Label>Walk outside?</Label>
+        <div style={{marginBottom:14}}><YesNo value={d.fitness.walk} onChange={v=>update("fitness","walk",v)}/></div>
+        <Label>Daily Steps</Label>
+        <div style={{marginBottom:14}}><NumInput value={d.fitness.steps} onChange={v=>update("fitness","steps",v)} placeholder="e.g. 8500"/></div>
+        <Label>Water Intake (× 500ml)</Label>
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
+          <button onClick={()=>update("fitness","water",Math.max(0,(parseInt(d.fitness.water)||0)-1))}
+            style={{width:36,height:36,borderRadius:10,border:"1.5px solid #e0e0e0",background:"#fafafa",fontSize:18,cursor:"pointer"}}>−</button>
+          <span style={{fontFamily:F,fontSize:18,fontWeight:700,minWidth:30,textAlign:"center"}}>{d.fitness.water||0}</span>
+          <button onClick={()=>update("fitness","water",(parseInt(d.fitness.water)||0)+1)}
+            style={{width:36,height:36,borderRadius:10,border:"1.5px solid #e0e0e0",background:"#fafafa",fontSize:18,cursor:"pointer"}}>+</button>
+          <span style={{fontFamily:F,fontSize:12,color:"#999"}}>= {((parseInt(d.fitness.water)||0)*0.5).toFixed(1)}L</span>
+        </div>
+      </Card>
+
+      <Card>
+        <SectionTitle>✨ Body</SectionTitle>
+        <Label>Mark Period Start (Day 1)</Label>
+        <div style={{marginBottom:14}}>
+          <button onClick={()=>update("body","periodStart",!d.body.periodStart)}
+            style={{padding:"9px 20px",borderRadius:10,border:`1.5px solid ${d.body.periodStart?"#c0392b":"#e0e0e0"}`,background:d.body.periodStart?"#c0392b":"#fafafa",color:d.body.periodStart?"#fff":"#555",fontFamily:F,fontSize:13,cursor:"pointer"}}>
+            {d.body.periodStart?"🔴 Period Started":"Mark as Day 1"}
+          </button>
+        </div>
+        <Label>Cycle Day (1–35)</Label>
+        <div style={{marginBottom:6}}>
+          <NumInput value={d.body.cycleDay} onChange={v=>update("body","cycleDay",v)} placeholder={inferredCD?`Auto: Day ${inferredCD}`:"e.g. 14"} min={1} max={35}/>
+        </div>
+        {inferredCD&&!d.body.cycleDay&&<p style={{fontFamily:F,fontSize:11,color:"#aaa",marginBottom:14}}>Auto-calculated from your last period start.</p>}
+        {phase&&(
+          <div style={{background:"#fafafa",borderLeft:`3px solid ${phase.color}`,borderRadius:10,padding:"12px 14px",marginBottom:14}}>
+            <p style={{fontFamily:FS,fontSize:14,color:phase.color,marginBottom:8}}>{phase.emoji} {phase.name} Phase</p>
+            {[["🏋️",phase.exercise],["🥗",phase.food],["💊",phase.supplements],["😴",phase.sleep]].map(([icon,v])=>(
+              <p key={icon} style={{fontFamily:F,fontSize:12,color:"#555",marginBottom:5}}><strong>{icon}</strong> {v}</p>
+            ))}
+          </div>
+        )}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
+          <div><Label>Weight (kg)</Label><NumInput value={d.body.weight} onChange={v=>update("body","weight",v)} placeholder="kg"/></div>
+          <div><Label>Height (cm)</Label><NumInput value={d.body.height} onChange={v=>update("body","height",v)} placeholder="cm"/></div>
+        </div>
+        <Label>Mood (1–10)</Label>
+        <div style={{marginBottom:14}}><Slider value={d.body.mood} onChange={v=>update("body","mood",v)}/></div>
+        <Label>Energy (1–10)</Label>
+        <Slider value={d.body.energy} onChange={v=>update("body","energy",v)}/>
+      </Card>
+
+      <Card>
+        <SectionTitle>🌆 Evening Recap</SectionTitle>
+        <TextArea value={d.eveningNote||""} onChange={v=>updateTop("eveningNote",v)} placeholder="How did the day go? How do you feel? Anything to note..."/>
+      </Card>
+
+      <Card>
+        <SectionTitle>📝 Notes</SectionTitle>
+        <TextArea value={d.notes||""} onChange={v=>updateTop("notes",v)} placeholder="PBs, how you felt at the gym, food notes, symptoms, anything..."/>
+      </Card>
+
+      <Card>
+        <SectionTitle>📷 Progress Photos</SectionTitle>
+        <p style={{fontFamily:F,fontSize:12,color:"#aaa",marginBottom:12}}>Stored privately on your device only.</p>
+        <PhotoLogger photos={d.photos||[]} onAdd={p=>updatePhoto("add",p)} onRemove={i=>updatePhoto("remove",i)}/>
+      </Card>
+    </div>
+  );
+}
+
+// ── Sleep Tab ────────────────────────────────────────────────────
+
+function SleepTab({entries}) {
+  const se=entries.map(([date,d])=>({date,...d.sleep})).filter(e=>e.hrs);
+  const pts=se.map(e=>({x:e.date,y:parseFloat(e.hrs)}));
+  return (
+    <div>
+      <Card>
+        <SectionTitle>Sleep Averages</SectionTitle>
+        <StatRow label="Avg duration" value={avg(se,"hrs")} unit="hrs"/>
+        <StatRow label="Avg REM" value={avg(se,"rem")} unit="%"/>
+        <StatRow label="Avg Deep" value={avg(se,"deep")} unit="%"/>
+        <StatRow label="Avg Light" value={avg(se,"light")} unit="%"/>
+        <StatRow label="Avg Awake" value={avg(se,"awake")} unit="%"/>
+        <StatRow label="Days logged" value={se.length}/>
+      </Card>
+      {pts.length>=2&&<Card><SectionTitle>Sleep Duration Over Time</SectionTitle><MiniLineChart data={pts} color="#5b6af0" height={80}/></Card>}
+      {se.slice().reverse().map((e,i)=>(
+        <Card key={i}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+            <span style={{fontFamily:F,fontSize:13,color:"#888"}}>{e.date}</span>
+            <span style={{fontFamily:FS,fontSize:16,color:"#111"}}>{e.hrs}h {e.mins||0}m</span>
+          </div>
+          <SleepDonut rem={pct(e.rem)} deep={pct(e.deep)} light={pct(e.light)} awake={pct(e.awake)}/>
+        </Card>
+      ))}
+      {!se.length&&<p style={{fontFamily:F,color:"#aaa",textAlign:"center",marginTop:60}}>No sleep data logged yet.</p>}
+    </div>
+  );
+}
+
+// ── Fitness Tab ──────────────────────────────────────────────────
+
+function FitnessTab({entries}) {
+  const fe=entries.map(([,d])=>d.fitness);
+  const stepPts=entries.filter(([,d])=>d.fitness?.steps).map(([date,d])=>({x:date,y:parseFloat(d.fitness.steps)}));
+  return (
+    <div>
+      <Card>
+        <SectionTitle>Fitness Summary</SectionTitle>
+        <StatRow label="Gym sessions" value={countYes(fe,"gym")} unit={`/ ${fe.length} days`}/>
+        <StatRow label="Rest days" value={fe.filter(d=>d.restDay).length}/>
+        <StatRow label="Walks outside" value={countYes(fe,"walk")}/>
+        <StatRow label="Avg daily steps" value={avg(fe,"steps")}/>
+        <StatRow label="Total steps" value={sumArr(fe,"steps").toLocaleString()}/>
+        <StatRow label="Total water" value={(sumArr(fe,"water")*0.5).toFixed(1)} unit="L"/>
+      </Card>
+      {stepPts.length>=2&&<Card><SectionTitle>Steps Over Time</SectionTitle><MiniLineChart data={stepPts} color="#27ae60" height={80}/></Card>}
+      <Card>
+        <SectionTitle>Day by Day</SectionTitle>
+        {entries.slice().reverse().map(([date,d],i)=>{
+          const f=d.fitness;
+          return (
+            <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"9px 0",borderBottom:"1px solid #f0f0f0"}}>
+              <span style={{fontFamily:F,fontSize:12,color:"#888"}}>{date}</span>
+              <div style={{display:"flex",gap:6,flexWrap:"wrap",justifyContent:"flex-end"}}>
+                {f.gym===true&&<span style={{fontSize:11,background:"#111",color:"#fff",padding:"2px 8px",borderRadius:20,fontFamily:F}}>Gym</span>}
+                {f.restDay&&<span style={{fontSize:11,background:"#e8f5e9",color:"#2e7d32",padding:"2px 8px",borderRadius:20,fontFamily:F}}>Rest</span>}
+                {f.walk===true&&<span style={{fontSize:11,background:"#e3f2fd",color:"#1565c0",padding:"2px 8px",borderRadius:20,fontFamily:F}}>Walk</span>}
+                {f.steps&&<span style={{fontFamily:F,fontSize:12,color:"#555"}}>{parseInt(f.steps).toLocaleString()} steps</span>}
+                {f.water&&<span style={{fontFamily:F,fontSize:12,color:"#5b9bd5"}}>💧{f.water}</span>}
+              </div>
+            </div>
+          );
+        })}
+        {!entries.length&&<p style={{fontFamily:F,color:"#aaa",textAlign:"center"}}>No data yet.</p>}
+      </Card>
+    </div>
+  );
+}
+
+// ── Body Tab ─────────────────────────────────────────────────────
+
+function BodyTab({entries}) {
+  const be=entries.map(([date,d])=>({date,...d.body}));
+  const withWeight=be.filter(e=>e.weight);
+  const moodPts=be.filter(e=>e.mood).map(e=>({x:e.date,y:parseFloat(e.mood)}));
+  const energyPts=be.filter(e=>e.energy).map(e=>({x:e.date,y:parseFloat(e.energy)}));
+  const weightPts=withWeight.map(e=>({x:e.date,y:parseFloat(e.weight)}));
+  return (
+    <div>
+      <Card>
+        <SectionTitle>Body Averages</SectionTitle>
+        <StatRow label="Avg mood" value={avg(be,"mood")} unit="/ 10"/>
+        <StatRow label="Avg energy" value={avg(be,"energy")} unit="/ 10"/>
+        <StatRow label="Latest weight" value={withWeight.length?withWeight[withWeight.length-1].weight:null} unit="kg"/>
+        <StatRow label="Height" value={be.find(e=>e.height)?.height} unit="cm"/>
+      </Card>
+      {moodPts.length>=2&&<Card><SectionTitle>Mood Over Time</SectionTitle><MiniLineChart data={moodPts} color="#5b6af0" height={70}/></Card>}
+      {energyPts.length>=2&&<Card><SectionTitle>Energy Over Time</SectionTitle><MiniLineChart data={energyPts} color="#f39c12" height={70}/></Card>}
+      {weightPts.length>=2&&<Card><SectionTitle>Weight Over Time</SectionTitle><MiniLineChart data={weightPts} color="#111" height={70}/></Card>}
+      <Card>
+        <SectionTitle>Cycle Log</SectionTitle>
+        {be.filter(e=>e.cycleDay||e.periodStart).slice().reverse().map((e,i)=>{
+          const cd=parseInt(e.cycleDay), phase=!isNaN(cd)?getCyclePhase(cd):null;
+          return (
+            <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid #f0f0f0"}}>
+              <span style={{fontFamily:F,fontSize:12,color:"#888"}}>{e.date}</span>
+              {e.periodStart&&<span style={{fontSize:11,background:"#ffeaea",color:"#c0392b",padding:"2px 8px",borderRadius:20,fontFamily:F}}>🔴 Day 1</span>}
+              {e.cycleDay&&<span style={{fontFamily:F,fontSize:12,color:"#111"}}>Day {e.cycleDay}</span>}
+              {phase&&<span style={{fontSize:11,padding:"2px 8px",borderRadius:20,fontFamily:F,background:phase.color+"20",color:phase.color}}>{phase.name}</span>}
+            </div>
+          );
+        })}
+        {!be.filter(e=>e.cycleDay||e.periodStart).length&&<p style={{fontFamily:F,color:"#aaa",textAlign:"center"}}>No cycle data yet.</p>}
+      </Card>
+    </div>
+  );
+}
+
+// ── Insights Tab ─────────────────────────────────────────────────
+
+function InsightsTab({data}) {
+  const insights=generateInsights(data);
+  const allEntries=Object.entries(data).sort(([a],[b])=>a.localeCompare(b));
+  const notesEntries=allEntries.filter(([,d])=>d.notes||d.morningNote||d.eveningNote);
+  return (
+    <div>
+      <Card>
+        <SectionTitle>Your Personal Insights ✨</SectionTitle>
+        {insights.length===0&&<p style={{fontFamily:F,fontSize:13,color:"#aaa",textAlign:"center",padding:"20px 0"}}>Log at least 5 days to unlock personal insights based on your patterns.</p>}
+        {insights.map((ins,i)=>(
+          <div key={i} style={{display:"flex",gap:12,padding:"12px 0",borderBottom:"1px solid #f5f5f5"}}>
+            <span style={{fontSize:24}}>{ins.icon}</span>
+            <p style={{fontFamily:F,fontSize:13,color:"#333",margin:0,lineHeight:1.6}}>{ins.text}</p>
+          </div>
+        ))}
+      </Card>
+      <Card>
+        <SectionTitle>Export Your Data</SectionTitle>
+        <p style={{fontFamily:F,fontSize:13,color:"#666",marginBottom:14}}>Download all your data as a CSV — great for sharing with a doctor or keeping a backup.</p>
+        <button onClick={()=>exportCSV(data)} style={{width:"100%",padding:"12px",borderRadius:12,border:"1.5px solid #111",background:"#111",color:"#fff",fontFamily:F,fontSize:14,fontWeight:600,cursor:"pointer"}}>
+          📥 Download CSV
+        </button>
+      </Card>
+      <Card>
+        <SectionTitle>Your Journal</SectionTitle>
+        {notesEntries.slice().reverse().map(([date,d],i)=>(
+          <div key={i} style={{padding:"12px 0",borderBottom:"1px solid #f5f5f5"}}>
+            <p style={{fontFamily:F,fontSize:11,letterSpacing:"0.06em",textTransform:"uppercase",color:"#aaa",margin:"0 0 6px"}}>{date}</p>
+            {d.morningNote&&<p style={{fontFamily:F,fontSize:13,color:"#555",margin:"0 0 4px"}}>🌅 {d.morningNote}</p>}
+            {d.eveningNote&&<p style={{fontFamily:F,fontSize:13,color:"#555",margin:"0 0 4px"}}>🌆 {d.eveningNote}</p>}
+            {d.notes&&<p style={{fontFamily:F,fontSize:13,color:"#555",margin:0}}>📝 {d.notes}</p>}
+          </div>
+        ))}
+        {!notesEntries.length&&<p style={{fontFamily:F,color:"#aaa",textAlign:"center"}}>No notes yet.</p>}
+      </Card>
+    </div>
+  );
+}
+
+// ── Period Overview ──────────────────────────────────────────────
+
+function PeriodOverview({entries,title}) {
+  const fe=entries.map(([,d])=>d.fitness), se=entries.map(([,d])=>d.sleep).filter(s=>s.hrs), be=entries.map(([,d])=>d.body);
+  return (
+    <div>
+      <p style={{fontFamily:FS,fontSize:15,color:"#111",marginBottom:14}}>{title}</p>
+      <Card><SectionTitle>Sleep</SectionTitle>
+        <StatRow label="Avg sleep" value={avg(se,"hrs")} unit="hrs"/>
+        <StatRow label="Avg REM" value={avg(se,"rem")} unit="%"/>
+        <StatRow label="Avg Deep" value={avg(se,"deep")} unit="%"/>
+        <StatRow label="Days logged" value={se.length}/>
+      </Card>
+      <Card><SectionTitle>Fitness</SectionTitle>
+        <StatRow label="Gym days" value={countYes(fe,"gym")}/>
+        <StatRow label="Rest days" value={fe.filter(d=>d.restDay).length}/>
+        <StatRow label="Walks" value={countYes(fe,"walk")}/>
+        <StatRow label="Avg steps" value={avg(fe,"steps")}/>
+        <StatRow label="Total water" value={(sumArr(fe,"water")*0.5).toFixed(1)} unit="L"/>
+      </Card>
+      <Card><SectionTitle>Body & Mind</SectionTitle>
+        <StatRow label="Avg mood" value={avg(be,"mood")} unit="/ 10"/>
+        <StatRow label="Avg energy" value={avg(be,"energy")} unit="/ 10"/>
+        <StatRow label="Latest weight" value={be.filter(b=>b.weight).slice(-1)[0]?.weight} unit="kg"/>
+      </Card>
+    </div>
+  );
+}
+
+function WeeklyTab({data}) {
+  const [weekOffset,setWeekOffset]=useState(0);
+  const getEntries=off=>{
+    const now=new Date(), monday=new Date(now);
+    monday.setDate(now.getDate()-((now.getDay()+6)%7)+off*7);
+    const days=[];
+    for(let i=0;i<7;i++){const d=new Date(monday);d.setDate(monday.getDate()+i);days.push(d.toISOString().split("T")[0]);}
+    return days.filter(d=>data[d]).map(d=>[d,data[d]]);
+  };
+  const entries=getEntries(weekOffset);
+  const label=weekOffset===0?"This Week":weekOffset===-1?"Last Week":`${Math.abs(weekOffset)} weeks ago`;
+  return (
+    <div>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+        <button onClick={()=>setWeekOffset(weekOffset-1)} style={{background:"none",border:"1px solid #e0e0e0",borderRadius:8,padding:"6px 12px",cursor:"pointer",fontFamily:F,fontSize:13}}>←</button>
+        <span style={{fontFamily:F,fontSize:13,color:"#555"}}>{label}</span>
+        <button onClick={()=>setWeekOffset(Math.min(0,weekOffset+1))} disabled={weekOffset>=0} style={{background:"none",border:"1px solid #e0e0e0",borderRadius:8,padding:"6px 12px",cursor:weekOffset>=0?"default":"pointer",fontFamily:F,fontSize:13,opacity:weekOffset>=0?0.3:1}}>→</button>
+      </div>
+      {entries.length?<PeriodOverview entries={entries} title={`${entries[0]?.[0]} → ${entries[entries.length-1]?.[0]}`}/>:<p style={{fontFamily:F,color:"#aaa",textAlign:"center",marginTop:60}}>No data for this week yet.</p>}
+    </div>
+  );
+}
+
+function MonthlyTab({data}) {
+  const now=new Date();
+  const [monthOffset,setMonthOffset]=useState(0);
+  const getEntries=off=>{
+    const d=new Date(now.getFullYear(),now.getMonth()+off,1);
+    return Object.entries(data).filter(([date])=>{const dt=new Date(date);return dt.getFullYear()===d.getFullYear()&&dt.getMonth()===d.getMonth();});
+  };
+  const entries=getEntries(monthOffset);
+  const labelDate=new Date(now.getFullYear(),now.getMonth()+monthOffset,1);
+  const label=labelDate.toLocaleString("default",{month:"long",year:"numeric"});
+  return (
+    <div>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+        <button onClick={()=>setMonthOffset(monthOffset-1)} style={{background:"none",border:"1px solid #e0e0e0",borderRadius:8,padding:"6px 12px",cursor:"pointer",fontFamily:F,fontSize:13}}>←</button>
+        <span style={{fontFamily:F,fontSize:13,color:"#555"}}>{label}</span>
+        <button onClick={()=>setMonthOffset(Math.min(0,monthOffset+1))} disabled={monthOffset>=0} style={{background:"none",border:"1px solid #e0e0e0",borderRadius:8,padding:"6px 12px",cursor:monthOffset>=0?"default":"pointer",fontFamily:F,fontSize:13,opacity:monthOffset>=0?0.3:1}}>→</button>
+      </div>
+      {entries.length?<PeriodOverview entries={entries} title={label}/>:<p style={{fontFamily:F,color:"#aaa",textAlign:"center",marginTop:60}}>No data for this month yet.</p>}
+    </div>
+  );
+}
+
+// ── App ──────────────────────────────────────────────────────────
+
+function App() {
+  const [data,setDataState]=useState({});
+  const [tab,setTab]=useState(0);
+  const [selectedDate,setSelectedDate]=useState(todayStr());
+  const [dayOffset,setDayOffset]=useState(0);
+
+  useEffect(()=>{setDataState(loadData());},[]);
+
+  function setData(newData){setDataState(newData);saveData(newData);}
+
+  function goDay(delta){
+    const newOffset=dayOffset+delta;
+    if(newOffset>0) return;
+    setDayOffset(newOffset);
+    setSelectedDate(offsetDate(newOffset));
+  }
+
+  const allEntries=Object.entries(data).sort(([a],[b])=>a.localeCompare(b));
+
+  return (
+    <div style={{background:"#f7f7f5",minHeight:"100vh",fontFamily:F}}>
+      <div style={{background:"#fff",borderBottom:"1px solid #ebebeb",padding:"16px 20px 0",position:"sticky",top:0,zIndex:100}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+          <p style={{fontFamily:FS,fontSize:20,color:"#111",margin:0}}>My Health</p>
+          <p style={{fontFamily:F,fontSize:11,color:"#ccc",margin:0,letterSpacing:"0.04em"}}>private · local</p>
+        </div>
+        <div style={{display:"flex",gap:0,overflowX:"auto",marginLeft:-4}}>
+          {TABS.map((t,i)=>(
+            <button key={i} onClick={()=>setTab(i)} style={{padding:"8px 11px",borderRadius:"10px 10px 0 0",border:"none",background:tab===i?"#f7f7f5":"transparent",color:tab===i?"#111":"#bbb",fontFamily:F,fontSize:12,fontWeight:tab===i?600:400,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>{t}</button>
+          ))}
+        </div>
+      </div>
+      <div style={{padding:"16px 16px 100px",maxWidth:500,margin:"0 auto"}}>
+        {tab===0&&<HomeTab data={data} setTab={setTab}/>}
+        {tab===1&&<LogTab data={data} setData={setData} selectedDate={selectedDate} dayOffset={dayOffset} goDay={goDay}/>}
+        {tab===2&&<SleepTab entries={allEntries}/>}
+        {tab===3&&<FitnessTab entries={allEntries}/>}
+        {tab===4&&<BodyTab entries={allEntries}/>}
+        {tab===5&&<InsightsTab data={data}/>}
+        {tab===6&&<WeeklyTab data={data}/>}
+        {tab===7&&<MonthlyTab data={data}/>}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
