@@ -571,17 +571,41 @@ function Log({data,setData,profile,setProfile,sel,off,goDay}) {
             <p style={{fontFamily:F,fontSize:12,color:C.textSoft,margin:"2px 0 0"}}>Today is Day {cycleDay(toDay(),profile.cycleStart)}</p>
           </div>
         )}
-        <input type="date" max={toDay()} value={profile.cycleStart||""} onChange={e=>{
-          const nd=e.target.value;
-          if(!nd||nd>toDay()) return;
-          const np={...profile};
-          if(profile.cycleStart&&profile.cycleStart!==nd){
-            const len=daysBetween(nd,profile.cycleStart);
-            if(len>0) np.cycleHist=[...(profile.cycleHist||[]),{start:profile.cycleStart,length:len}].slice(-12);
-          }
-          np.cycleStart=nd;
-          setProfile(np); saveP(np);
-        }} style={{border:`1.5px solid ${C.blush}`,borderRadius:12,padding:"11px 14px",fontSize:14,fontFamily:F,color:C.text,background:C.bgSoft,width:"100%",boxSizing:"border-box",outline:"none",marginBottom:6}}/>
+        <div style={{display:"flex",gap:6,marginBottom:6}}>
+          {(()=>{
+            const parts=(profile.cycleStart||toDay()).split("-");
+            const yr=parseInt(parts[0])||new Date().getFullYear();
+            const mo=parseInt(parts[1])||new Date().getMonth()+1;
+            const dy=parseInt(parts[2])||new Date().getDate();
+            const days=new Date(yr,mo,0).getDate();
+            const sel=(y,m,d)=>{
+              const nd=`${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+              if(nd>toDay()) return;
+              const np={...profile};
+              if(profile.cycleStart&&profile.cycleStart!==nd){
+                const len=daysBetween(nd,profile.cycleStart);
+                if(len>0) np.cycleHist=[...(profile.cycleHist||[]),{start:profile.cycleStart,length:len}].slice(-12);
+              }
+              np.cycleStart=nd; setProfile(np); saveP(np);
+            };
+            const ss={border:`1.5px solid ${C.blush}`,borderRadius:10,padding:"10px 6px",fontSize:13,fontFamily:F,color:C.text,background:"#fff",boxSizing:"border-box",outline:"none",cursor:"pointer",appearance:"none",WebkitAppearance:"none",textAlign:"center"};
+            const now=new Date();
+            const years=Array.from({length:3},(_,i)=>now.getFullYear()-i);
+            return (
+              <>
+                <select value={dy} onChange={e=>sel(yr,mo,parseInt(e.target.value))} style={{...ss,flex:"1"}}>
+                  {Array.from({length:days},(_,i)=><option key={i+1} value={i+1}>{i+1}</option>)}
+                </select>
+                <select value={mo} onChange={e=>sel(yr,parseInt(e.target.value),dy)} style={{...ss,flex:"1.5"}}>
+                  {["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].map((m,i)=><option key={i} value={i+1}>{m}</option>)}
+                </select>
+                <select value={yr} onChange={e=>sel(parseInt(e.target.value),mo,dy)} style={{...ss,flex:"1.2"}}>
+                  {years.map(y=><option key={y} value={y}>{y}</option>)}
+                </select>
+              </>
+            );
+          })()}
+        </div>
         <p style={{fontFamily:F,fontSize:11,color:C.textLight,margin:"0 0 16px"}}>Pick any past date — including today if your period just started</p>
 
         <Lbl>Mood (1-10)</Lbl>
