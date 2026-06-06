@@ -7,15 +7,15 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
   <meta name="apple-mobile-web-app-title" content="My Health"/>
   <title>My Health</title>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Raleway:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
   <style>
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    body { margin: 0; padding: 0; background: #fdf6f0; font-family: 'DM Sans', sans-serif; }
-    input[type=range] { -webkit-appearance: none; appearance: none; height: 4px; border-radius: 2px; background: #e0c0cc; outline: none; }
-    input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 22px; height: 22px; border-radius: 50%; background: #b85c82; cursor: pointer; }
+    body { margin: 0; padding: 0; background: #e8dff0; font-family: 'Raleway', sans-serif; }
+    input[type=range] { -webkit-appearance: none; appearance: none; height: 4px; border-radius: 2px; background: #d4c4e4; outline: none; }
+    input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 22px; height: 22px; border-radius: 50%; background: #c55a30; cursor: pointer; box-shadow: 0 2px 8px rgba(197,90,48,0.3); }
     input:focus, textarea:focus, button:focus { outline: none; }
     ::-webkit-scrollbar { display: none; }
     * { scrollbar-width: none; }
@@ -26,35 +26,47 @@
 <script type="text/babel">
 const { useState, useEffect, useRef } = React;
 
+// ── Design tokens ────────────────────────────────────────────────
 const C = {
-  bg:"#fdf6f0", bgCard:"#ffffff", bgSoft:"#fef9f5",
-  blush:"#e8a8bc", blushDeep:"#b85c82", blushLight:"#fdeef3",
-  lavender:"#9b84c0", lavLight:"#f0eaf7",
-  sage:"#6a9a6a", sageLight:"#eef4ee",
-  gold:"#b8843a", goldLight:"#fdf3e7",
-  text:"#1e1018", textSoft:"#5a3a48", textLight:"#8a6070",
-  border:"#e0c0cc", borderSoft:"#f2e4ea",
+  bg:         "#e8dff0",
+  bgCard:     "#f0e8f8",
+  bgWhite:    "#ffffff",
+  bgDark:     "#2a1f35",
+  coral:      "#c55a30",
+  coralLight: "#fde8e0",
+  lavender:   "#d4c4e4",
+  lavDark:    "#6a5878",
+  lavMid:     "#9888b0",
+  plum:       "#2a1f35",
+  text:       "#2a1f35",
+  textSoft:   "#6a5878",
+  textMuted:  "#9888b0",
+  border:     "#d8c8e8",
+  borderSoft: "#e4d8f0",
 };
 
+const FP = "'Playfair Display', serif";
+const FR = "'Raleway', sans-serif";
+
 const CYCLE_PHASES = [
-  { name:"Menstrual", days:[1,5], color:"#b85c82", bg:"#fdeef3", emoji:"🌸",
-    exercise:"Gentle movement — yoga, stretching, short walks. Honor rest.",
-    food:"Iron-rich foods: lentils, leafy greens, red meat. Warm nourishing meals.",
+  { name:"Menstrual", days:[1,5], color:"#c55a30", bg:"linear-gradient(145deg,#f8ede8,#f4e0d8)", emoji:"🌸",
+    exercise:"Gentle yoga, stretching, short walks. Honor rest.",
+    food:"Iron-rich foods, leafy greens. Warm nourishing meals.",
     supplements:"Iron, Magnesium, Vitamin C.",
     sleep:"Prioritize extra sleep. Your body is working hard." },
-  { name:"Follicular", days:[6,13], color:"#4a8a4a", bg:"#eef4ee", emoji:"🌱",
-    exercise:"Energy rising — great for strength training and cardio.",
-    food:"Lighter foods: salads, lean proteins, fermented foods.",
+  { name:"Follicular", days:[6,13], color:"#5a8a5a", bg:"linear-gradient(145deg,#eaf4ea,#e0f0e0)", emoji:"🌱",
+    exercise:"Energy rising — strength training, cardio, new workouts.",
+    food:"Lighter foods, lean proteins, fermented foods.",
     supplements:"B vitamins, Zinc, Probiotics.",
     sleep:"Sleep quality improves. Aim for 7-9 hrs." },
-  { name:"Ovulation", days:[14,16], color:"#b8843a", bg:"#fdf3e7", emoji:"✨",
-    exercise:"Peak energy — push yourself. HIIT, heavy lifts.",
+  { name:"Ovulation", days:[14,16], color:"#b87830", bg:"linear-gradient(145deg,#fdf0e0,#f8e8d0)", emoji:"✨",
+    exercise:"Peak energy — HIIT, heavy lifts, competitive sports.",
     food:"Anti-inflammatory: berries, flaxseed, fiber-rich veg.",
     supplements:"Vitamin E, Antioxidants, Omega-3.",
     sleep:"May notice lighter sleep. Wind down well." },
-  { name:"Luteal", days:[17,35], color:"#7055a8", bg:"#f3eef9", emoji:"🌙",
+  { name:"Luteal", days:[17,35], color:"#7058a8", bg:"linear-gradient(145deg,#f0eaf8,#e8e0f0)", emoji:"🌙",
     exercise:"Slow down. Pilates, swimming, moderate walks.",
-    food:"Complex carbs, magnesium-rich foods: dark chocolate, bananas.",
+    food:"Complex carbs, dark chocolate, pumpkin seeds, bananas.",
     supplements:"Magnesium, Vitamin B6, Evening Primrose Oil.",
     sleep:"Sleep may be disrupted. Limit screens and caffeine." },
 ];
@@ -62,8 +74,6 @@ const CYCLE_PHASES = [
 const TABS = ["Home","Log","Sleep","Fitness","Body","Insights"];
 const TAB_ICONS = ["🏠","📝","🌙","🏃","✨","💡"];
 const SK = "my_health_james_v2";
-const F = "'DM Sans', sans-serif";
-const FS = "'Cormorant Garamond', serif";
 
 function getPhase(day) {
   if (!day || day < 1) return null;
@@ -72,119 +82,64 @@ function getPhase(day) {
 }
 
 const toDay = () => new Date().toISOString().split("T")[0];
-
-function offDay(n) {
-  const d = new Date(); d.setDate(d.getDate() + n);
-  return d.toISOString().split("T")[0];
-}
-
-function daysBetween(a, b) {
-  return Math.round((new Date(a + "T00:00:00") - new Date(b + "T00:00:00")) / 86400000);
-}
-
-function cycleDay(sel, start) {
-  if (!start) return null;
-  const d = daysBetween(sel, start);
-  return d < 0 ? null : d + 1;
-}
+function offDay(n) { const d = new Date(); d.setDate(d.getDate() + n); return d.toISOString().split("T")[0]; }
+function daysBetween(a, b) { return Math.round((new Date(a+"T00:00:00") - new Date(b+"T00:00:00")) / 86400000); }
+function cycleDay(sel, start) { if (!start) return null; const d = daysBetween(sel, start); return d < 0 ? null : d + 1; }
 
 function fmtLabel(s) {
-  const t = toDay(), y = offDay(-1);
-  if (s === t) return "Today";
-  if (s === y) return "Yesterday";
-  return new Date(s + "T00:00:00").toLocaleDateString("default", { weekday:"short", month:"short", day:"numeric" });
+  const t=toDay(), y=offDay(-1);
+  if (s===t) return "Today"; if (s===y) return "Yesterday";
+  return new Date(s+"T00:00:00").toLocaleDateString("default",{weekday:"short",month:"short",day:"numeric"});
 }
+function fmtFull(s) { return new Date(s+"T00:00:00").toLocaleDateString("default",{weekday:"long",month:"long",day:"numeric"}); }
 
-function fmtFull(s) {
-  return new Date(s + "T00:00:00").toLocaleDateString("default", { weekday:"long", month:"long", day:"numeric" });
-}
+function parseW(v) { if (v===""||v===null||v===undefined) return null; const n=parseFloat(String(v).replace(",",".")); return isNaN(n)?null:n; }
+function fmtW(v) { const n=parseW(v); if (n===null) return null; return Number.isInteger(n)?String(n):n.toFixed(2).replace(/\.?0+$/,""); }
+function calcBMI(w,h) { const ww=parseW(w),hh=parseFloat(h); if(!ww||!hh) return null; return (ww/((hh/100)*(hh/100))).toFixed(1); }
 
-function parseW(v) {
-  if (v === "" || v === null || v === undefined) return null;
-  const n = parseFloat(String(v).replace(",", "."));
-  return isNaN(n) ? null : n;
-}
+function av(arr,key) { const v=arr.map(d=>parseFloat(d[key])).filter(x=>!isNaN(x)); return v.length?(v.reduce((a,b)=>a+b,0)/v.length).toFixed(1):null; }
+function sm(arr,key) { return arr.map(d=>parseFloat(d[key])).filter(x=>!isNaN(x)).reduce((a,b)=>a+b,0); }
+function cy(arr,key) { return arr.filter(d=>d[key]===true).length; }
 
-function fmtW(v) {
-  const n = parseW(v);
-  if (n === null) return null;
-  return Number.isInteger(n) ? String(n) : n.toFixed(2).replace(/\.?0+$/, "");
-}
-
-function calcBMI(w, h) {
-  const ww = parseW(w), hh = parseFloat(h);
-  if (!ww || !hh) return null;
-  return (ww / ((hh/100) * (hh/100))).toFixed(1);
-}
-
-function av(arr, key) {
-  const v = arr.map(d => parseFloat(d[key])).filter(x => !isNaN(x));
-  return v.length ? (v.reduce((a,b) => a+b,0) / v.length).toFixed(1) : null;
-}
-
-function sm(arr, key) {
-  return arr.map(d => parseFloat(d[key])).filter(x => !isNaN(x)).reduce((a,b) => a+b, 0);
-}
-
-function cy(arr, key) { return arr.filter(d => d[key] === true).length; }
-
-function weekDays(off = 0) {
-  const now = new Date(), mon = new Date(now);
-  mon.setDate(now.getDate() - ((now.getDay()+6)%7) + off*7);
-  const r = [];
-  for (let i = 0; i < 7; i++) { const d = new Date(mon); d.setDate(mon.getDate()+i); r.push(d.toISOString().split("T")[0]); }
+function weekDays(off=0) {
+  const now=new Date(), mon=new Date(now);
+  mon.setDate(now.getDate()-((now.getDay()+6)%7)+off*7);
+  const r=[];
+  for(let i=0;i<7;i++){const d=new Date(mon);d.setDate(mon.getDate()+i);r.push(d.toISOString().split("T")[0]);}
   return r;
 }
 
-function loadD() { try { const r = localStorage.getItem(SK); return r ? JSON.parse(r) : {}; } catch { return {}; } }
-function saveD(d) { try { localStorage.setItem(SK, JSON.stringify(d)); } catch {} }
-function loadP() { try { const r = localStorage.getItem(SK+"_p"); return r ? JSON.parse(r) : { height:"165", cycleStart:null, cycleHist:[] }; } catch { return { height:"165", cycleStart:null, cycleHist:[] }; } }
-function saveP(p) { try { localStorage.setItem(SK+"_p", JSON.stringify(p)); } catch {} }
-function loadWB() { try { const r = localStorage.getItem(SK+"_wb"); return r ? JSON.parse(r) : {}; } catch { return {}; } }
-function saveWB(d) { try { localStorage.setItem(SK+"_wb", JSON.stringify(d)); } catch {} }
-function loadMeas() { try { const r = localStorage.getItem(SK+"_meas"); return r ? JSON.parse(r) : {}; } catch { return {}; } }
-function saveMeas(d) { try { localStorage.setItem(SK+"_meas", JSON.stringify(d)); } catch {} }
+function loadD() { try{const r=localStorage.getItem(SK);return r?JSON.parse(r):{}}catch{return{}} }
+function saveD(d) { try{localStorage.setItem(SK,JSON.stringify(d))}catch{} }
+function loadP() { try{const r=localStorage.getItem(SK+"_p");return r?JSON.parse(r):{height:"165",cycleStart:null,cycleHist:[]}}catch{return{height:"165",cycleStart:null,cycleHist:[]}} }
+function saveP(p) { try{localStorage.setItem(SK+"_p",JSON.stringify(p))}catch{} }
+function loadWB() { try{const r=localStorage.getItem(SK+"_wb");return r?JSON.parse(r):{}}catch{return{}} }
+function saveWB(d) { try{localStorage.setItem(SK+"_wb",JSON.stringify(d))}catch{} }
+function loadMeas() { try{const r=localStorage.getItem(SK+"_meas");return r?JSON.parse(r):{}}catch{return{}} }
+function saveMeas(d) { try{localStorage.setItem(SK+"_meas",JSON.stringify(d))}catch{} }
 
 function migrate(data) {
-  const OLD = ["my_health_tracker_v1","aj_health_tracker_v1","aj_health_tracker_v2"];
+  const OLD=["my_health_tracker_v1","aj_health_tracker_v1","aj_health_tracker_v2"];
   try {
-    if (Object.keys(data).length > 0) return;
-    for (const k of OLD) {
-      const r = localStorage.getItem(k);
-      if (r) { const p = JSON.parse(r); if (Object.keys(p).length > 0) { localStorage.setItem(SK, r); return; } }
-    }
+    if(Object.keys(data).length>0) return;
+    for(const k of OLD){const r=localStorage.getItem(k);if(r){const p=JSON.parse(r);if(Object.keys(p).length>0){localStorage.setItem(SK,r);return;}}}
   } catch {}
 }
 
 function emptyDay() {
-  return { sleep:{ hrs:"",mins:"",rem:"",deep:"",light:"",awake:"" }, fitness:{ gym:null,steps:"",restDay:false,walk:null,sauna:null,water:"" }, body:{ mood:"",energy:"" }, notes:"", morningNote:"", photos:[] };
+  return { sleep:{hrs:"",mins:"",rem:"",deep:"",light:"",awake:""}, fitness:{gym:null,steps:"",restDay:false,walk:null,sauna:null,water:""}, body:{mood:"",energy:""}, notes:"", morningNote:"", photos:[] };
 }
-
 function emptyWB() {
-  return { weight:"",bmi:"",bodyFat:"",bodyFatMass:"",muscleMass:"",skeletalMuscle:"",leanBodyMass:"",water:"",visceralFat:"",bmr:"",boneMass:"",protein:"",subcutaneousFat:"",bodyAge:"",bodyType:"" };
+  return {weight:"",bmi:"",bodyFat:"",bodyFatMass:"",muscleMass:"",skeletalMuscle:"",leanBodyMass:"",water:"",visceralFat:"",bmr:"",boneMass:"",protein:"",subcutaneousFat:"",bodyAge:"",bodyType:""};
 }
 
-function logStreak(data) {
-  let s=0; const d=new Date();
-  for (let i=0;i<365;i++) { const k=d.toISOString().split("T")[0]; if(data[k]){s++;d.setDate(d.getDate()-1);}else break; }
-  return s;
-}
+function logStreak(data) { let s=0;const d=new Date();for(let i=0;i<365;i++){const k=d.toISOString().split("T")[0];if(data[k]){s++;d.setDate(d.getDate()-1);}else break;}return s; }
+function gymStreak(data) { let s=0;const d=new Date();for(let i=0;i<365;i++){const k=d.toISOString().split("T")[0];const e=data[k];if(!e){d.setDate(d.getDate()-1);if(i>0)break;continue;}if(e.fitness?.gym===true){s++;d.setDate(d.getDate()-1);}else break;}return s; }
+function waterStreak(data,t=4) { let s=0;const d=new Date();for(let i=0;i<365;i++){const k=d.toISOString().split("T")[0];const e=data[k];if(e&&parseInt(e.fitness?.water||0)>=t){s++;d.setDate(d.getDate()-1);}else break;}return s; }
 
-function gymStreak(data) {
-  let s=0; const d=new Date();
-  for (let i=0;i<365;i++) { const k=d.toISOString().split("T")[0]; const e=data[k]; if(!e){d.setDate(d.getDate()-1);if(i>0)break;continue;} if(e.fitness?.gym===true){s++;d.setDate(d.getDate()-1);}else break; }
-  return s;
-}
-
-function waterStreak(data, t=4) {
-  let s=0; const d=new Date();
-  for (let i=0;i<365;i++) { const k=d.toISOString().split("T")[0]; const e=data[k]; if(e&&parseInt(e.fitness?.water||0)>=t){s++;d.setDate(d.getDate()-1);}else break; }
-  return s;
-}
-
-function insights(data) {
-  const ins=[], e=Object.entries(data).sort(([a],[b])=>a.localeCompare(b));
-  if (e.length<5) return [];
+function genInsights(data) {
+  const ins=[],e=Object.entries(data).sort(([a],[b])=>a.localeCompare(b));
+  if(e.length<5) return [];
   const ws=e.filter(([,d])=>d.fitness?.walk===true&&d.sleep?.hrs).map(([,d])=>parseFloat(d.sleep.hrs)).filter(v=>!isNaN(v));
   const nws=e.filter(([,d])=>d.fitness?.walk===false&&d.sleep?.hrs).map(([,d])=>parseFloat(d.sleep.hrs)).filter(v=>!isNaN(v));
   if(ws.length>=3&&nws.length>=3){const wA=ws.reduce((a,b)=>a+b,0)/ws.length,nA=nws.reduce((a,b)=>a+b,0)/nws.length;if(wA-nA>0.3)ins.push({icon:"🚶",text:`You sleep ${(wA-nA).toFixed(1)} hrs more on days you walk outside.`});}
@@ -192,7 +147,7 @@ function insights(data) {
   const ngm=e.filter(([,d])=>d.fitness?.gym===false&&d.body?.mood).map(([,d])=>parseFloat(d.body.mood)).filter(v=>!isNaN(v));
   if(gm.length>=3&&ngm.length>=3){const gA=gm.reduce((a,b)=>a+b,0)/gm.length,nA=ngm.reduce((a,b)=>a+b,0)/ngm.length;if(gA-nA>0.5)ins.push({icon:"🏋️",text:`Your mood is ${(gA-nA).toFixed(1)} pts higher on gym days.`});}
   const sh=e.filter(([,d])=>d.sleep?.hrs).map(([,d])=>parseFloat(d.sleep.hrs)).filter(v=>!isNaN(v));
-  if(sh.length>=7){const sA=(sh.reduce((a,b)=>a+b,0)/sh.length).toFixed(1);ins.push({icon:"😴",text:parseFloat(sA)<7?`Avg sleep is ${sA} hrs — aim for 7-9 hrs.`:`You average ${sA} hrs sleep. Great consistency.`});}
+  if(sh.length>=7){const sA=(sh.reduce((a,b)=>a+b,0)/sh.length).toFixed(1);ins.push({icon:"😴",text:parseFloat(sA)<7?`Your avg sleep is ${sA} hrs — aim for 7-9 hrs.`:`You average ${sA} hrs of sleep. Beautiful consistency.`});}
   const wd=e.filter(([,d])=>parseInt(d.fitness?.water||0)>=4).length;
   if(e.length>=5){const p=Math.round((wd/e.length)*100);ins.push({icon:"💧",text:p>=70?`Water goal hit ${p}% of days — excellent.`:`Water goal hit ${p}% of days. Keep a bottle visible.`});}
   return ins.slice(0,6);
@@ -208,62 +163,74 @@ function doCSV(data) {
 
 // ── Primitives ───────────────────────────────────────────────────
 
-function Card({children,style={}}) {
-  return <div style={{background:C.bgCard,border:`1px solid ${C.border}`,borderRadius:20,padding:"20px 22px",marginBottom:12,boxShadow:"0 2px 12px rgba(184,92,130,0.06)",...style}}>{children}</div>;
+function Card({children, style={}}) {
+  return <div style={{background:C.bgCard,border:`1px solid ${C.border}`,borderRadius:20,padding:"22px",marginBottom:12,boxShadow:"0 2px 16px rgba(42,31,53,0.06)",...style}}>{children}</div>;
 }
 
-function Title({children,color}) {
-  return <p style={{fontFamily:FS,fontSize:22,color:color||C.text,marginBottom:14,marginTop:2,fontWeight:500}}>{children}</p>;
+function CardWhite({children, style={}}) {
+  return <div style={{background:C.bgWhite,border:`1px solid ${C.borderSoft}`,borderRadius:20,padding:"22px",marginBottom:12,boxShadow:"0 2px 16px rgba(42,31,53,0.05)",...style}}>{children}</div>;
 }
 
-function Lbl({children}) {
-  return <p style={{fontSize:10,letterSpacing:"0.1em",textTransform:"uppercase",color:C.textLight,marginBottom:7,fontFamily:F,fontWeight:600}}>{children}</p>;
+function CardDark({children, style={}}) {
+  return <div style={{background:`linear-gradient(145deg,#2a1f35,#3a2845)`,borderRadius:20,padding:"22px",marginBottom:12,...style}}>{children}</div>;
 }
 
-function Row({label,value,unit=""}) {
+function H1({children, italic, color, style={}}) {
+  return <p style={{fontFamily:FP,fontSize:22,fontWeight:600,color:color||C.text,fontStyle:italic?"italic":"normal",marginBottom:14,marginTop:2,...style}}>{children}</p>;
+}
+
+function Lbl({children, color}) {
+  return <p style={{fontFamily:FR,fontSize:9,fontWeight:700,letterSpacing:"0.18em",textTransform:"uppercase",color:color||C.coral,marginBottom:6}}>{children}</p>;
+}
+
+function LblMuted({children}) {
+  return <p style={{fontFamily:FR,fontSize:9,fontWeight:700,letterSpacing:"0.16em",textTransform:"uppercase",color:C.textMuted,marginBottom:6}}>{children}</p>;
+}
+
+function Row({label, value, unit=""}) {
   return (
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"9px 0",borderBottom:`1px solid ${C.borderSoft}`}}>
-      <span style={{fontFamily:F,fontSize:13,color:C.textSoft}}>{label}</span>
-      <span style={{fontFamily:F,fontSize:14,fontWeight:600,color:C.text}}>{value!=null?value:"–"}{value!=null&&unit?" "+unit:""}</span>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderBottom:`1px solid ${C.borderSoft}`}}>
+      <span style={{fontFamily:FR,fontSize:13,fontWeight:500,color:C.textMuted}}>{label}</span>
+      <span style={{fontFamily:FP,fontSize:15,fontWeight:600,color:C.text}}>{value!=null?value:"—"}{value!=null&&unit?" "+unit:""}</span>
     </div>
   );
 }
 
-function YN({value,onChange}) {
+function YN({value, onChange}) {
   const btn=(lbl,val)=>(
-    <button onClick={()=>onChange(val)} style={{flex:1,padding:"11px 0",borderRadius:12,border:`1.5px solid ${value===val?C.blushDeep:C.border}`,background:value===val?C.blushDeep:"transparent",color:value===val?"#fff":C.textSoft,fontFamily:F,fontSize:13,cursor:"pointer",fontWeight:value===val?600:400}}>{lbl}</button>
+    <button onClick={()=>onChange(val)} style={{flex:1,padding:"11px 0",borderRadius:12,border:`1.5px solid ${value===val?C.coral:C.border}`,background:value===val?C.coral:"transparent",color:value===val?"#fff":C.textSoft,fontFamily:FR,fontSize:12,fontWeight:700,letterSpacing:"0.06em",cursor:"pointer",transition:"all 0.2s"}}>{lbl}</button>
   );
   return <div style={{display:"flex",gap:8}}>{btn("Yes",true)}{btn("No",false)}</div>;
 }
 
-function Slide({value,onChange}) {
+function Slide({value, onChange}) {
   const n=parseInt(value)||0;
   const em=n<=3?"😔":n<=6?"😊":n<=8?"😄":"🤩";
   return (
     <div style={{display:"flex",alignItems:"center",gap:12}}>
       <input type="range" min={1} max={10} value={value||1} onChange={e=>onChange(e.target.value)} style={{flex:1}}/>
-      <div style={{display:"flex",alignItems:"center",gap:5,minWidth:46}}>
+      <div style={{display:"flex",alignItems:"center",gap:6,minWidth:50}}>
         {value?<span style={{fontSize:16}}>{em}</span>:null}
-        <span style={{fontFamily:F,fontSize:18,fontWeight:700,color:C.blushDeep}}>{value||"–"}</span>
+        <span style={{fontFamily:FP,fontSize:20,fontWeight:600,color:C.coral}}>{value||"—"}</span>
       </div>
     </div>
   );
 }
 
-function Streak({count,label,icon,color,bg}) {
+function StreakBadge({count, label, icon}) {
   const on=count>0;
   return (
-    <div style={{flex:1,background:on?(bg||C.blushLight):"#fafafa",border:`1.5px solid ${on?(color||C.blush):"#f0f0f0"}`,borderRadius:16,padding:"16px 10px",textAlign:"center"}}>
-      <div style={{fontSize:24,marginBottom:6}}>{icon}</div>
-      <div style={{fontFamily:F,fontSize:28,fontWeight:700,color:on?(color||C.blushDeep):"#ccc"}}>{count}</div>
-      <div style={{fontFamily:F,fontSize:10,color:on?(color||C.blushDeep):"#ccc",letterSpacing:"0.06em",textTransform:"uppercase",marginTop:3}}>{label}</div>
+    <div style={{flex:1,background:on?"rgba(197,90,48,0.08)":"rgba(255,255,255,0.4)",border:`1.5px solid ${on?C.coral:C.border}`,borderRadius:16,padding:"16px 8px",textAlign:"center"}}>
+      <div style={{fontSize:22,marginBottom:6}}>{icon}</div>
+      <p style={{fontFamily:FP,fontSize:26,fontWeight:700,color:on?C.coral:C.lavMid,margin:0}}>{count}</p>
+      <p style={{fontFamily:FR,fontSize:9,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",color:on?C.coral:C.lavMid,margin:"4px 0 0"}}>{label}</p>
     </div>
   );
 }
 
-function Line({pts,color,h=65}) {
-  const c=color||C.blushDeep;
-  if(!pts||pts.length<2) return <p style={{fontFamily:F,fontSize:12,color:C.textLight,textAlign:"center",padding:"20px 0",fontStyle:"italic"}}>Not enough data yet</p>;
+function LineChart({pts, color, h=65}) {
+  const c=color||C.coral;
+  if(!pts||pts.length<2) return <p style={{fontFamily:FR,fontSize:12,color:C.textMuted,textAlign:"center",padding:"20px 0",fontStyle:"italic"}}>Not enough data yet</p>;
   const vals=pts.map(p=>p.y),mn=Math.min(...vals),mx=Math.max(...vals),rng=mx-mn||1;
   const W=280,H=h,pd=10;
   const xs=pts.map((_,i)=>pd+(i/(pts.length-1))*(W-pd*2));
@@ -277,19 +244,19 @@ function Line({pts,color,h=65}) {
         <defs><linearGradient id={id} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={c} stopOpacity="0.2"/><stop offset="100%" stopColor={c} stopOpacity="0"/></linearGradient></defs>
         <path d={fill} fill={`url(#${id})`}/>
         <path d={path} fill="none" stroke={c} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"/>
-        {pts.map((p,i)=><circle key={i} cx={xs[i]} cy={ys[i]} r={3.5} fill="#fff" stroke={c} strokeWidth={2}/>)}
+        {pts.map((p,i)=><circle key={i} cx={xs[i]} cy={ys[i]} r={4} fill="#fff" stroke={c} strokeWidth={2}/>)}
       </svg>
       <div style={{display:"flex",justifyContent:"space-between",marginTop:4}}>
-        <span style={{fontFamily:F,fontSize:10,color:C.textLight}}>{pts[0].label||pts[0].x}</span>
-        <span style={{fontFamily:F,fontSize:10,color:C.textLight}}>{pts[pts.length-1].label||pts[pts.length-1].x}</span>
+        <span style={{fontFamily:FR,fontSize:10,color:C.textMuted}}>{pts[0].label||pts[0].x}</span>
+        <span style={{fontFamily:FR,fontSize:10,color:C.textMuted}}>{pts[pts.length-1].label||pts[pts.length-1].x}</span>
       </div>
     </div>
   );
 }
 
-function MultiLine({series,h=80}) {
+function MultiLine({series, h=80}) {
   const all=series.flatMap(s=>s.pts);
-  if(all.length<2) return <p style={{fontFamily:F,fontSize:12,color:C.textLight,textAlign:"center",padding:"20px 0",fontStyle:"italic"}}>Not enough data yet</p>;
+  if(all.length<2) return <p style={{fontFamily:FR,fontSize:12,color:C.textMuted,textAlign:"center",padding:"20px 0",fontStyle:"italic"}}>Not enough data yet</p>;
   const vals=all.map(p=>p.y),mn=Math.min(...vals),mx=Math.max(...vals),rng=mx-mn||1;
   const W=280,H=h,pd=10;
   const allX=[...new Set(all.map(p=>p.x))].sort();
@@ -310,37 +277,29 @@ function MultiLine({series,h=80}) {
         }))}
       </svg>
       <div style={{display:"flex",gap:14,marginTop:8,flexWrap:"wrap"}}>
-        {series.map((s,i)=>(
-          <div key={i} style={{display:"flex",alignItems:"center",gap:5}}>
-            <div style={{width:12,height:3,borderRadius:2,background:s.color}}/>
-            <span style={{fontFamily:F,fontSize:11,color:C.textSoft}}>{s.label}</span>
-          </div>
-        ))}
+        {series.map((s,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:5}}><div style={{width:12,height:3,borderRadius:2,background:s.color}}/><span style={{fontFamily:FR,fontSize:11,color:C.textSoft}}>{s.label}</span></div>)}
       </div>
     </div>
   );
 }
 
-function Bars({pts,color,h=65}) {
-  const c=color||C.blushDeep;
-  if(!pts||!pts.some(p=>p.y>0)) return <p style={{fontFamily:F,fontSize:12,color:C.textLight,textAlign:"center",padding:"20px 0",fontStyle:"italic"}}>No data yet</p>;
+function BarChart({pts, color, h=65}) {
+  const c=color||C.coral;
+  if(!pts||!pts.some(p=>p.y>0)) return <p style={{fontFamily:FR,fontSize:12,color:C.textMuted,textAlign:"center",padding:"20px 0",fontStyle:"italic"}}>No data yet</p>;
   const mx=Math.max(...pts.map(p=>p.y),1),W=280,H=h,bw=(W/pts.length)-5;
   return (
     <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{overflow:"visible"}}>
-      {pts.map((p,i)=>{
-        const x=i*(W/pts.length)+2.5,bh=Math.max(p.y>0?4:0,(p.y/mx)*(H-16));
-        return (
-          <g key={i}>
-            <rect x={x} y={H-bh-14} width={bw} height={bh} rx={4} fill={p.y>0?c:C.borderSoft}/>
-            <text x={x+bw/2} y={H-1} textAnchor="middle" fill={C.textLight} fontSize={9} fontFamily={F}>{p.label||""}</text>
-          </g>
-        );
-      })}
+      {pts.map((p,i)=>{const x=i*(W/pts.length)+2.5,bh=Math.max(p.y>0?4:0,(p.y/mx)*(H-16));return(
+        <g key={i}>
+          <rect x={x} y={H-bh-14} width={bw} height={bh} rx={4} fill={p.y>0?c:C.borderSoft}/>
+          <text x={x+bw/2} y={H-1} textAnchor="middle" fill={C.textMuted} fontSize={9} fontFamily={FR}>{p.label||""}</text>
+        </g>
+      );})}
     </svg>
   );
 }
 
-function Photos({photos,onAdd,onRemove}) {
+function PhotoLogger({photos, onAdd, onRemove}) {
   const ref=useRef();
   function handle(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>onAdd({src:ev.target.result,ts:Date.now()});r.readAsDataURL(f);e.target.value="";}
   return (
@@ -348,31 +307,41 @@ function Photos({photos,onAdd,onRemove}) {
       {(photos||[]).map((p,i)=>(
         <div key={i} style={{position:"relative"}}>
           <img src={p.src} alt="" style={{width:76,height:76,objectFit:"cover",borderRadius:14,border:`2px solid ${C.border}`}}/>
-          <button onClick={()=>onRemove(i)} style={{position:"absolute",top:-6,right:-6,width:22,height:22,borderRadius:"50%",background:C.blushDeep,color:"#fff",border:"none",fontSize:12,cursor:"pointer"}}>x</button>
+          <button onClick={()=>onRemove(i)} style={{position:"absolute",top:-6,right:-6,width:22,height:22,borderRadius:"50%",background:C.coral,color:"#fff",border:"none",fontSize:12,cursor:"pointer"}}>x</button>
         </div>
       ))}
-      <button onClick={()=>ref.current.click()} style={{width:76,height:76,borderRadius:14,border:`2px dashed ${C.blush}`,background:C.blushLight,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:4}}>
-        <span style={{fontSize:22}}>+</span>
-        <span style={{fontFamily:F,fontSize:10,color:C.blushDeep,fontWeight:600}}>Photo</span>
+      <button onClick={()=>ref.current.click()} style={{width:76,height:76,borderRadius:14,border:`2px dashed ${C.lavender}`,background:"rgba(255,255,255,0.5)",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:4}}>
+        <span style={{fontSize:22,color:C.coral}}>+</span>
+        <span style={{fontFamily:FR,fontSize:10,color:C.coral,fontWeight:700}}>Photo</span>
       </button>
       <input ref={ref} type="file" accept="image/*" onChange={handle} style={{display:"none"}}/>
     </div>
   );
 }
 
-function WBField({label,unit,value,onChange}) {
+function WBField({label, unit, value, onChange}) {
   return (
     <div>
-      <p style={{fontFamily:F,fontSize:11,color:C.textSoft,marginBottom:4,fontWeight:600}}>{label}{unit?" ("+unit+")":""}</p>
-      <input type="text" inputMode="decimal" value={value||""} onChange={e=>onChange(e.target.value)} placeholder="-"
-        style={{border:`1.5px solid ${value?C.blushDeep:C.blush}`,borderRadius:10,padding:"9px 12px",fontSize:13,fontFamily:F,color:C.text,background:"#fff",width:"100%",boxSizing:"border-box",outline:"none"}}/>
+      <p style={{fontFamily:FR,fontSize:10,color:C.textSoft,marginBottom:4,fontWeight:600,letterSpacing:"0.06em"}}>{label}{unit?" ("+unit+")":""}</p>
+      <input type="text" inputMode="decimal" value={value||""} onChange={e=>onChange(e.target.value)} placeholder="—"
+        style={{border:`1.5px solid ${value?C.coral:C.border}`,borderRadius:10,padding:"9px 12px",fontSize:13,fontFamily:FR,color:C.text,background:"#fff",width:"100%",boxSizing:"border-box",outline:"none",fontWeight:500}}/>
     </div>
   );
 }
 
+function NumIn({value, onChange, placeholder, max, inputMode="numeric"}) {
+  return <input type="number" value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} max={max} inputMode={inputMode}
+    style={{border:`1.5px solid ${C.border}`,borderRadius:12,padding:"11px 14px",fontSize:14,fontFamily:FR,color:C.text,background:"rgba(255,255,255,0.7)",width:"100%",boxSizing:"border-box",outline:"none",fontWeight:500}}/>;
+}
+
+function TextArea({value, onChange, placeholder}) {
+  return <textarea value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} rows={3}
+    style={{border:`1.5px solid ${C.border}`,borderRadius:12,padding:"12px 14px",fontSize:13,fontFamily:FR,color:C.text,background:"rgba(255,255,255,0.7)",width:"100%",boxSizing:"border-box",outline:"none",resize:"none",lineHeight:1.6,fontWeight:500}}/>;
+}
+
 // ── Home ─────────────────────────────────────────────────────────
 
-function Home({data,profile,setTab}) {
+function Home({data, profile, setTab}) {
   const t=toDay(), td=data[t]||emptyDay();
   const ls=logStreak(data), gs=gymStreak(data), ws=waterStreak(data);
   const cd=cycleDay(t,profile.cycleStart), ph=cd?getPhase(cd):null;
@@ -382,91 +351,87 @@ function Home({data,profile,setTab}) {
   const l7=ents.slice(-7);
   const moodPts=l7.filter(([,d])=>d.body?.mood).map(([dt,d])=>({x:dt,y:parseFloat(d.body.mood),label:dt.slice(5)}));
   const slPts=l7.filter(([,d])=>d.sleep?.hrs).map(([dt,d])=>({x:dt,y:parseFloat(d.sleep.hrs),label:dt.slice(5)}));
-  const wbe=Object.entries(loadWB()).sort(([a],[b])=>a.localeCompare(b));
-  const latWB=wbe.length?wbe[wbe.length-1][1]:null;
+  const wbE=Object.entries(loadWB()).sort(([a],[b])=>a.localeCompare(b));
   const latW=(() => { const we=ents.filter(([,d])=>d.body?.weight); return we.length?parseW(we[we.length-1][1].body?.weight):null; })();
   const logged=!!data[t], remind=!logged&&hr>=19;
 
   return (
     <div>
-      <div style={{background:`linear-gradient(135deg,${C.blushLight} 0%,${C.lavLight} 100%)`,borderRadius:24,padding:"24px 22px",marginBottom:14,border:`1px solid ${C.border}`}}>
-        <p style={{fontFamily:FS,fontSize:28,color:C.text,margin:"0 0 2px",fontWeight:500}}>{gr} 🌸</p>
-        <p style={{fontFamily:F,fontSize:13,color:C.textSoft,margin:"0 0 18px"}}>{fmtFull(t)}</p>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
-          {[{l:"Sleep",v:td.sleep?.hrs?`${td.sleep.hrs}h ${td.sleep.mins||0}m`:"–",i:"🌙"},{l:"Mood",v:td.body?.mood?`${td.body.mood}/10`:"–",i:"💫"},{l:"Energy",v:td.body?.energy?`${td.body.energy}/10`:"–",i:"⚡"}].map(({l,v,i})=>(
-            <div key={l} style={{background:"rgba(255,255,255,0.7)",borderRadius:14,padding:"12px 8px",textAlign:"center"}}>
-              <div style={{fontSize:18,marginBottom:4}}>{i}</div>
-              <p style={{fontFamily:F,fontSize:10,color:C.textSoft,margin:"0 0 2px",letterSpacing:"0.06em",textTransform:"uppercase"}}>{l}</p>
-              <p style={{fontFamily:F,fontSize:15,fontWeight:700,color:C.text,margin:0}}>{v}</p>
+      {/* Hero */}
+      <div style={{background:"linear-gradient(145deg,#e0d4f0,#d4c4e8)",border:`1px solid ${C.lavender}`,borderRadius:24,padding:"24px 22px",marginBottom:14,boxShadow:"0 4px 20px rgba(42,31,53,0.1)"}}>
+        <p style={{fontFamily:FP,fontSize:32,fontWeight:600,color:C.plum,margin:"0 0 3px"}}>Good <em style={{fontStyle:"italic",color:C.coral}}>{gr.split(" ")[1]}</em> 🌸</p>
+        <p style={{fontFamily:FR,fontSize:11,fontWeight:600,color:C.lavMid,margin:"0 0 20px",letterSpacing:"0.12em",textTransform:"uppercase"}}>{fmtFull(t)}</p>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+          {[{l:"Sleep",v:td.sleep?.hrs?`${td.sleep.hrs}h ${td.sleep.mins||0}m`:"—"},{l:"Mood",v:td.body?.mood?`${td.body.mood}/10`:"—"},{l:"Energy",v:td.body?.energy?`${td.body.energy}/10`:"—"}].map(({l,v})=>(
+            <div key={l} style={{background:"rgba(255,255,255,0.55)",borderRadius:14,padding:"13px 8px",textAlign:"center"}}>
+              <Lbl>{l}</Lbl>
+              <p style={{fontFamily:FP,fontSize:17,fontWeight:600,color:C.plum,margin:0}}>{v}</p>
             </div>
           ))}
         </div>
         {(latW||cd)&&(
-          <div style={{display:"grid",gridTemplateColumns:latW&&cd?"1fr 1fr":"1fr",gap:10,marginTop:10}}>
-            {latW&&<div style={{background:"rgba(255,255,255,0.7)",borderRadius:14,padding:"12px",textAlign:"center"}}>
-              <p style={{fontFamily:F,fontSize:10,color:C.textSoft,margin:"0 0 2px",letterSpacing:"0.06em",textTransform:"uppercase"}}>Weight</p>
-              <p style={{fontFamily:F,fontSize:16,fontWeight:700,color:C.text,margin:0}}>{fmtW(latW)} kg</p>
-            </div>}
-            {cd&&ph&&<div style={{background:"rgba(255,255,255,0.7)",borderRadius:14,padding:"12px",textAlign:"center"}}>
-              <p style={{fontFamily:F,fontSize:10,color:C.textSoft,margin:"0 0 2px",letterSpacing:"0.06em",textTransform:"uppercase"}}>{ph.emoji} Cycle</p>
-              <p style={{fontFamily:F,fontSize:13,fontWeight:700,color:ph.color,margin:0}}>Day {cd} · {ph.name}</p>
-            </div>}
+          <div style={{display:"grid",gridTemplateColumns:latW&&cd?"1fr 1fr":"1fr",gap:8,marginTop:8}}>
+            {latW&&<div style={{background:"rgba(255,255,255,0.55)",borderRadius:14,padding:"12px",textAlign:"center"}}><Lbl>Weight</Lbl><p style={{fontFamily:FP,fontSize:17,fontWeight:600,color:C.plum,margin:0}}>{fmtW(latW)} kg</p></div>}
+            {cd&&ph&&<div style={{background:"rgba(255,255,255,0.55)",borderRadius:14,padding:"12px",textAlign:"center"}}><Lbl color={ph.color}>Cycle</Lbl><p style={{fontFamily:FP,fontSize:14,fontWeight:600,color:ph.color,margin:0}}>Day {cd} · {ph.name}</p></div>}
           </div>
         )}
       </div>
 
+      {/* Reminder */}
       {remind&&(
-        <Card style={{background:`linear-gradient(135deg,${C.blushDeep},#a04070)`,border:"none"}}>
+        <div style={{background:`linear-gradient(145deg,${C.coral},#a84820)`,borderRadius:20,padding:"20px 22px",marginBottom:12,boxShadow:"0 4px 20px rgba(197,90,48,0.3)"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
             <div>
-              <p style={{fontFamily:FS,fontSize:18,color:"#fff",margin:0}}>Time to log your day ✨</p>
-              <p style={{fontFamily:F,fontSize:12,color:"rgba(255,255,255,0.7)",margin:"4px 0 0"}}>Just a few minutes.</p>
+              <p style={{fontFamily:FP,fontSize:20,fontWeight:600,color:"#fff",fontStyle:"italic",margin:0}}>Time to log your day</p>
+              <p style={{fontFamily:FR,fontSize:12,color:"rgba(255,255,255,0.75)",margin:"4px 0 0",fontWeight:500}}>Just a few minutes — you've got this.</p>
             </div>
-            <button onClick={()=>setTab(1)} style={{background:"rgba(255,255,255,0.2)",color:"#fff",border:"1.5px solid rgba(255,255,255,0.5)",borderRadius:12,padding:"9px 14px",fontFamily:F,fontSize:12,fontWeight:700,cursor:"pointer"}}>Log now</button>
+            <button onClick={()=>setTab(1)} style={{background:"rgba(255,255,255,0.2)",color:"#fff",border:"1.5px solid rgba(255,255,255,0.5)",borderRadius:12,padding:"10px 14px",fontFamily:FR,fontSize:11,fontWeight:700,letterSpacing:"0.08em",cursor:"pointer",whiteSpace:"nowrap"}}>Log now</button>
           </div>
-        </Card>
+        </div>
       )}
 
+      {/* Phase card */}
       {ph?(
-        <Card style={{background:ph.bg,border:`1.5px solid ${ph.color}30`}}>
-          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
-            <span style={{fontSize:28}}>{ph.emoji}</span>
+        <div style={{background:ph.bg,border:`1.5px solid ${ph.color}40`,borderRadius:20,padding:"22px",marginBottom:12}}>
+          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14}}>
+            <span style={{fontSize:30}}>{ph.emoji}</span>
             <div>
-              <p style={{fontFamily:F,fontSize:10,color:ph.color,margin:0,letterSpacing:"0.08em",textTransform:"uppercase",fontWeight:600}}>Cycle · Day {cd}</p>
-              <p style={{fontFamily:FS,fontSize:22,color:C.text,margin:0,fontWeight:500}}>{ph.name} Phase</p>
+              <p style={{fontFamily:FR,fontSize:9,fontWeight:700,letterSpacing:"0.18em",textTransform:"uppercase",color:ph.color,margin:0}}>Cycle · Day {cd}</p>
+              <p style={{fontFamily:FP,fontSize:24,fontWeight:600,color:C.plum,margin:0}}>{ph.name} Phase</p>
             </div>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
             {[["Exercise",ph.exercise],["Food",ph.food],["Supplements",ph.supplements],["Sleep",ph.sleep]].map(([k,v])=>(
-              <div key={k} style={{background:"rgba(255,255,255,0.75)",borderRadius:12,padding:"10px 12px"}}>
-                <p style={{fontFamily:F,fontSize:11,fontWeight:700,color:ph.color,margin:"0 0 4px"}}>{k}</p>
-                <p style={{fontFamily:F,fontSize:11,color:C.textSoft,margin:0,lineHeight:1.5}}>{v}</p>
+              <div key={k} style={{background:"rgba(255,255,255,0.65)",borderRadius:12,padding:"12px"}}>
+                <p style={{fontFamily:FR,fontSize:9,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:ph.color,margin:"0 0 5px"}}>{k}</p>
+                <p style={{fontFamily:FR,fontSize:11,fontWeight:500,color:C.textSoft,margin:0,lineHeight:1.5}}>{v}</p>
               </div>
             ))}
           </div>
-        </Card>
+        </div>
       ):(
-        <Card style={{background:C.blushLight,border:`1.5px dashed ${C.blush}`,textAlign:"center"}}>
-          <p style={{fontSize:24,margin:"0 0 6px"}}>🌸</p>
-          <p style={{fontFamily:F,fontSize:13,color:C.textSoft,margin:0}}>Go to <strong>Log</strong> and set your period start date to begin cycle tracking</p>
+        <Card style={{textAlign:"center",background:"rgba(255,255,255,0.4)",borderStyle:"dashed"}}>
+          <p style={{fontSize:28,margin:"0 0 8px"}}>🌸</p>
+          <p style={{fontFamily:FR,fontSize:13,fontWeight:500,color:C.textSoft,margin:0}}>Go to <strong>Log</strong> and set your period start date to begin cycle tracking</p>
         </Card>
       )}
 
+      {/* Streaks */}
       <Card>
-        <Title>Streaks 🔥</Title>
+        <H1>Streaks</H1>
         <div style={{display:"flex",gap:8}}>
-          <Streak count={ls} label="Days logged" icon="📓" color={C.blushDeep} bg={C.blushLight}/>
-          <Streak count={gs} label="Gym" icon="🏋️" color="#4a8a4a" bg={C.sageLight}/>
-          <Streak count={ws} label="Water" icon="💧" color="#5b9fd8" bg="#edf5fb"/>
+          <StreakBadge count={ls} label="Days logged" icon="📓"/>
+          <StreakBadge count={gs} label="Gym" icon="🏋️"/>
+          <StreakBadge count={ws} label="Water" icon="💧"/>
         </div>
       </Card>
 
-      {moodPts.length>=2&&<Card><Title>Mood this week 💫</Title><Line pts={moodPts} color={C.lavender}/></Card>}
-      {slPts.length>=2&&<Card><Title>Sleep this week 🌙</Title><Line pts={slPts} color={C.blushDeep}/></Card>}
+      {moodPts.length>=2&&<Card><H1 italic>Mood this week</H1><LineChart pts={moodPts} color="#7058a8"/></Card>}
+      {slPts.length>=2&&<Card><H1 italic>Sleep this week</H1><LineChart pts={slPts} color={C.coral}/></Card>}
 
       {!logged&&!remind&&(
-        <button onClick={()=>setTab(1)} style={{width:"100%",padding:"16px",borderRadius:16,border:`2px solid ${C.blushDeep}`,background:"transparent",color:C.blushDeep,fontFamily:F,fontSize:15,fontWeight:700,cursor:"pointer"}}>
-          + Log today
+        <button onClick={()=>setTab(1)} style={{width:"100%",padding:"16px",borderRadius:16,border:`2px solid ${C.coral}`,background:"transparent",color:C.coral,fontFamily:FR,fontSize:13,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",cursor:"pointer"}}>
+          + Log Today
         </button>
       )}
     </div>
@@ -475,87 +440,82 @@ function Home({data,profile,setTab}) {
 
 // ── Log ──────────────────────────────────────────────────────────
 
-function Log({data,setData,profile,setProfile,sel,off,goDay}) {
+function Log({data, setData, profile, setProfile, sel, off, goDay}) {
   const d=data[sel]||emptyDay();
   const cd=cycleDay(sel,profile.cycleStart), ph=cd?getPhase(cd):null;
 
-  function upd(sec,key,val) {
-    const p=data[sel]||emptyDay();
-    setData({...data,[sel]:{...p,[sec]:{...p[sec],[key]:val}}});
-  }
+  function upd(sec,key,val) { const p=data[sel]||emptyDay(); setData({...data,[sel]:{...p,[sec]:{...p[sec],[key]:val}}}); }
   function updTop(key,val) { const p=data[sel]||emptyDay(); setData({...data,[sel]:{...p,[key]:val}}); }
 
   return (
     <div>
+      {/* Date nav */}
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
-        <button onClick={()=>goDay(-1)} style={{width:40,height:40,borderRadius:12,border:`1.5px solid ${C.border}`,background:"#fff",fontSize:18,cursor:"pointer",color:C.textSoft}}>&#8249;</button>
-        <div style={{background:off===0?C.blushDeep:"#fff",borderRadius:14,padding:"8px 20px",textAlign:"center",border:`1.5px solid ${off===0?C.blushDeep:C.border}`}}>
-          <p style={{fontFamily:F,fontSize:14,fontWeight:700,color:off===0?"#fff":C.text,margin:0}}>{fmtLabel(sel)}</p>
-          {off!==0&&<p style={{fontFamily:F,fontSize:11,color:C.textSoft,margin:"2px 0 0"}}>{sel}</p>}
+        <button onClick={()=>goDay(-1)} style={{width:42,height:42,borderRadius:12,border:`1.5px solid ${C.border}`,background:"rgba(255,255,255,0.6)",fontSize:18,cursor:"pointer",color:C.textSoft}}>&#8249;</button>
+        <div style={{background:off===0?C.coral:"rgba(255,255,255,0.6)",borderRadius:14,padding:"8px 22px",textAlign:"center",border:`1.5px solid ${off===0?C.coral:C.border}`}}>
+          <p style={{fontFamily:FR,fontSize:14,fontWeight:700,color:off===0?"#fff":C.text,margin:0,letterSpacing:"0.04em"}}>{fmtLabel(sel)}</p>
+          {off!==0&&<p style={{fontFamily:FR,fontSize:11,color:C.textMuted,margin:"2px 0 0"}}>{sel}</p>}
         </div>
-        <button onClick={()=>goDay(1)} disabled={off>=0} style={{width:40,height:40,borderRadius:12,border:`1.5px solid ${C.border}`,background:"#fff",fontSize:18,cursor:off>=0?"default":"pointer",color:C.textSoft,opacity:off>=0?0.3:1}}>&#8250;</button>
+        <button onClick={()=>goDay(1)} disabled={off>=0} style={{width:42,height:42,borderRadius:12,border:`1.5px solid ${C.border}`,background:"rgba(255,255,255,0.6)",fontSize:18,cursor:off>=0?"default":"pointer",color:C.textSoft,opacity:off>=0?0.3:1}}>&#8250;</button>
       </div>
 
       {cd&&ph&&(
         <div style={{display:"flex",alignItems:"center",gap:10,background:ph.bg,borderRadius:14,padding:"12px 16px",marginBottom:12,border:`1px solid ${ph.color}30`}}>
           <span style={{fontSize:22}}>{ph.emoji}</span>
           <div>
-            <p style={{fontFamily:F,fontSize:12,fontWeight:700,color:ph.color,margin:0}}>Day {cd} - {ph.name} Phase</p>
-            <p style={{fontFamily:F,fontSize:11,color:C.textSoft,margin:0}}>Auto-calculated</p>
+            <p style={{fontFamily:FR,fontSize:10,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:ph.color,margin:0}}>Day {cd} — {ph.name} Phase</p>
+            <p style={{fontFamily:FR,fontSize:11,fontWeight:500,color:C.textMuted,margin:0}}>Auto-calculated from your period start</p>
           </div>
         </div>
       )}
 
       <Card>
-        <Title>Morning Note 🌅</Title>
-        <textarea value={d.morningNote||""} onChange={e=>updTop("morningNote",e.target.value)} placeholder="How are you feeling? Intentions for today..." rows={3}
-          style={{border:`1.5px solid ${C.border}`,borderRadius:12,padding:"11px 14px",fontSize:13,fontFamily:F,color:C.text,background:C.bgSoft,width:"100%",boxSizing:"border-box",outline:"none",resize:"none",lineHeight:1.6}}/>
+        <H1 italic>Morning Note 🌅</H1>
+        <TextArea value={d.morningNote||""} onChange={v=>updTop("morningNote",v)} placeholder="How are you feeling? Intentions for today..."/>
       </Card>
 
       <Card>
-        <Title>Sleep 🌙</Title>
-        <Lbl>Duration</Lbl>
+        <H1 italic>Sleep 🌙</H1>
+        <LblMuted>Duration</LblMuted>
         <div style={{display:"flex",gap:8,marginBottom:16}}>
-          <input type="number" inputMode="numeric" value={d.sleep.hrs} onChange={e=>upd("sleep","hrs",e.target.value)} placeholder="hrs" max={24} style={{border:`1.5px solid ${C.border}`,borderRadius:12,padding:"11px 14px",fontSize:14,fontFamily:F,color:C.text,background:C.bgSoft,width:"100%",boxSizing:"border-box",outline:"none"}}/>
-          <input type="number" inputMode="numeric" value={d.sleep.mins} onChange={e=>upd("sleep","mins",e.target.value)} placeholder="mins" max={59} style={{border:`1.5px solid ${C.border}`,borderRadius:12,padding:"11px 14px",fontSize:14,fontFamily:F,color:C.text,background:C.bgSoft,width:"100%",boxSizing:"border-box",outline:"none"}}/>
+          <NumIn value={d.sleep.hrs} onChange={v=>upd("sleep","hrs",v)} placeholder="hrs" max={24}/>
+          <NumIn value={d.sleep.mins} onChange={v=>upd("sleep","mins",v)} placeholder="mins" max={59}/>
         </div>
-        <Lbl>Sleep Stages (%)</Lbl>
+        <LblMuted>Sleep Stages (%)</LblMuted>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-          {[["rem","REM %","#7055a8"],["deep","Deep %","#3d7fc0"],["light","Light %","#7cb8d8"],["awake","Awake %","#b8843a"]].map(([k,lbl,col])=>(
+          {[["rem","REM %"],["deep","Deep %"],["light","Light %"],["awake","Awake %"]].map(([k,lbl])=>(
             <div key={k}>
-              <p style={{fontFamily:F,fontSize:11,color:col,marginBottom:5,fontWeight:600}}>{lbl}</p>
-              <input type="number" inputMode="numeric" value={d.sleep[k]} onChange={e=>upd("sleep",k,e.target.value)} placeholder="0" max={100} style={{border:`1.5px solid ${C.border}`,borderRadius:12,padding:"11px 14px",fontSize:14,fontFamily:F,color:C.text,background:C.bgSoft,width:"100%",boxSizing:"border-box",outline:"none"}}/>
+              <p style={{fontFamily:FR,fontSize:11,color:C.textMuted,marginBottom:5,fontWeight:600}}>{lbl}</p>
+              <NumIn value={d.sleep[k]} onChange={v=>upd("sleep",k,v)} placeholder="0" max={100}/>
             </div>
           ))}
         </div>
       </Card>
 
       <Card>
-        <Title>Fitness 🏃</Title>
-        <Lbl>Gym today?</Lbl>
+        <H1 italic>Fitness 🏃</H1>
+        <LblMuted>Gym today?</LblMuted>
         <div style={{marginBottom:16}}><YN value={d.fitness.gym} onChange={v=>upd("fitness","gym",v)}/></div>
-        <Lbl>Rest day?</Lbl>
+        <LblMuted>Rest day?</LblMuted>
         <div style={{marginBottom:16}}>
-          <button onClick={()=>upd("fitness","restDay",!d.fitness.restDay)} style={{padding:"11px 22px",borderRadius:12,border:`1.5px solid ${d.fitness.restDay?C.sage:C.border}`,background:d.fitness.restDay?C.sageLight:"transparent",color:d.fitness.restDay?"#4a8a4a":C.textSoft,fontFamily:F,fontSize:13,cursor:"pointer",fontWeight:600}}>
+          <button onClick={()=>upd("fitness","restDay",!d.fitness.restDay)} style={{padding:"11px 22px",borderRadius:12,border:`1.5px solid ${d.fitness.restDay?C.coral:C.border}`,background:d.fitness.restDay?C.coralLight:"transparent",color:d.fitness.restDay?C.coral:C.textSoft,fontFamily:FR,fontSize:12,fontWeight:700,letterSpacing:"0.06em",cursor:"pointer"}}>
             {d.fitness.restDay?"Rest Day 🌿":"Mark as Rest Day"}
           </button>
         </div>
-        <Lbl>Walk outside?</Lbl>
+        <LblMuted>Walk outside?</LblMuted>
         <div style={{marginBottom:16}}><YN value={d.fitness.walk} onChange={v=>upd("fitness","walk",v)}/></div>
-        <Lbl>Sauna?</Lbl>
+        <LblMuted>Sauna?</LblMuted>
         <div style={{marginBottom:16}}><YN value={d.fitness.sauna} onChange={v=>upd("fitness","sauna",v)}/></div>
-        <Lbl>Daily Steps</Lbl>
-        <div style={{marginBottom:16}}>
-          <input type="number" inputMode="numeric" value={d.fitness.steps} onChange={e=>upd("fitness","steps",e.target.value)} placeholder="e.g. 8500" style={{border:`1.5px solid ${C.border}`,borderRadius:12,padding:"11px 14px",fontSize:14,fontFamily:F,color:C.text,background:C.bgSoft,width:"100%",boxSizing:"border-box",outline:"none"}}/>
-        </div>
-        <Lbl>Water (x 500ml)</Lbl>
+        <LblMuted>Daily Steps</LblMuted>
+        <div style={{marginBottom:16}}><NumIn value={d.fitness.steps} onChange={v=>upd("fitness","steps",v)} placeholder="e.g. 8500"/></div>
+        <LblMuted>Water (x 500ml)</LblMuted>
         <div style={{display:"flex",alignItems:"center",gap:14}}>
-          <button onClick={()=>upd("fitness","water",Math.max(0,(parseInt(d.fitness.water)||0)-1))} style={{width:40,height:40,borderRadius:12,border:`1.5px solid ${C.border}`,background:"#fff",fontSize:20,cursor:"pointer",color:C.textSoft}}>-</button>
+          <button onClick={()=>upd("fitness","water",Math.max(0,(parseInt(d.fitness.water)||0)-1))} style={{width:42,height:42,borderRadius:12,border:`1.5px solid ${C.border}`,background:"rgba(255,255,255,0.6)",fontSize:20,cursor:"pointer",color:C.textSoft}}>-</button>
           <div style={{textAlign:"center"}}>
-            <span style={{fontFamily:F,fontSize:24,fontWeight:700,color:C.blushDeep}}>{d.fitness.water||0}</span>
-            <p style={{fontFamily:F,fontSize:11,color:C.textLight,margin:0}}>{((parseInt(d.fitness.water)||0)*0.5).toFixed(1)}L</p>
+            <p style={{fontFamily:FP,fontSize:26,fontWeight:700,color:C.coral,margin:0}}>{d.fitness.water||0}</p>
+            <p style={{fontFamily:FR,fontSize:11,color:C.textMuted,margin:0,fontWeight:500}}>{((parseInt(d.fitness.water)||0)*0.5).toFixed(1)}L</p>
           </div>
-          <button onClick={()=>upd("fitness","water",(parseInt(d.fitness.water)||0)+1)} style={{width:40,height:40,borderRadius:12,border:`1.5px solid ${C.blush}`,background:C.blushLight,fontSize:20,cursor:"pointer",color:C.blushDeep}}>+</button>
+          <button onClick={()=>upd("fitness","water",(parseInt(d.fitness.water)||0)+1)} style={{width:42,height:42,borderRadius:12,border:`1.5px solid ${C.coral}`,background:C.coralLight,fontSize:20,cursor:"pointer",color:C.coral}}>+</button>
           <div style={{display:"flex",gap:3,flexWrap:"wrap",flex:1}}>
             {Array.from({length:parseInt(d.fitness.water)||0}).map((_,i)=><span key={i} style={{fontSize:14}}>💧</span>)}
           </div>
@@ -563,12 +523,12 @@ function Log({data,setData,profile,setProfile,sel,off,goDay}) {
       </Card>
 
       <Card>
-        <Title>Body ✨</Title>
-        <Lbl>Set Period Start (Day 1)</Lbl>
+        <H1 italic>Body ✨</H1>
+        <LblMuted>Set Period Start (Day 1)</LblMuted>
         {profile.cycleStart&&(
-          <div style={{background:C.blushLight,borderRadius:12,padding:"10px 14px",marginBottom:12,border:`1px solid ${C.blush}`}}>
-            <p style={{fontFamily:F,fontSize:12,fontWeight:700,color:C.blushDeep,margin:0}}>🌸 Period started: {profile.cycleStart}</p>
-            <p style={{fontFamily:F,fontSize:12,color:C.textSoft,margin:"2px 0 0"}}>Today is Day {cycleDay(toDay(),profile.cycleStart)}</p>
+          <div style={{background:C.coralLight,borderRadius:12,padding:"10px 14px",marginBottom:10,border:`1px solid ${C.coral}40`}}>
+            <p style={{fontFamily:FR,fontSize:12,fontWeight:700,color:C.coral,margin:0}}>🌸 Period started: {profile.cycleStart}</p>
+            <p style={{fontFamily:FR,fontSize:12,fontWeight:500,color:C.textSoft,margin:"2px 0 0"}}>Today is Day {cycleDay(toDay(),profile.cycleStart)}</p>
           </div>
         )}
         <div style={{display:"flex",gap:6,marginBottom:6}}>
@@ -578,19 +538,15 @@ function Log({data,setData,profile,setProfile,sel,off,goDay}) {
             const mo=parseInt(parts[1])||new Date().getMonth()+1;
             const dy=parseInt(parts[2])||new Date().getDate();
             const days=new Date(yr,mo,0).getDate();
-            const sel=(y,m,d)=>{
-              const nd=`${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+            const sel=(y,m,dd)=>{
+              const nd=`${y}-${String(m).padStart(2,"0")}-${String(dd).padStart(2,"0")}`;
               if(nd>toDay()) return;
               const np={...profile};
-              if(profile.cycleStart&&profile.cycleStart!==nd){
-                const len=daysBetween(nd,profile.cycleStart);
-                if(len>0) np.cycleHist=[...(profile.cycleHist||[]),{start:profile.cycleStart,length:len}].slice(-12);
-              }
+              if(profile.cycleStart&&profile.cycleStart!==nd){const len=daysBetween(nd,profile.cycleStart);if(len>0)np.cycleHist=[...(profile.cycleHist||[]),{start:profile.cycleStart,length:len}].slice(-12);}
               np.cycleStart=nd; setProfile(np); saveP(np);
             };
-            const ss={border:`1.5px solid ${C.blush}`,borderRadius:10,padding:"10px 6px",fontSize:13,fontFamily:F,color:C.text,background:"#fff",boxSizing:"border-box",outline:"none",cursor:"pointer",appearance:"none",WebkitAppearance:"none",textAlign:"center"};
-            const now=new Date();
-            const years=Array.from({length:3},(_,i)=>now.getFullYear()-i);
+            const ss={border:`1.5px solid ${C.border}`,borderRadius:10,padding:"10px 6px",fontSize:13,fontFamily:FR,color:C.text,background:"rgba(255,255,255,0.7)",boxSizing:"border-box",outline:"none",cursor:"pointer",WebkitAppearance:"none",textAlign:"center",fontWeight:600};
+            const years=Array.from({length:3},(_,i)=>new Date().getFullYear()-i);
             return (
               <>
                 <select value={dy} onChange={e=>sel(yr,mo,parseInt(e.target.value))} style={{...ss,flex:"1"}}>
@@ -606,18 +562,16 @@ function Log({data,setData,profile,setProfile,sel,off,goDay}) {
             );
           })()}
         </div>
-        <p style={{fontFamily:F,fontSize:11,color:C.textLight,margin:"0 0 16px"}}>Pick any past date — including today if your period just started</p>
-
-        <Lbl>Mood (1-10)</Lbl>
+        <p style={{fontFamily:FR,fontSize:11,color:C.textMuted,margin:"0 0 16px",fontWeight:500}}>Pick any past date — including today</p>
+        <LblMuted>Mood (1-10)</LblMuted>
         <div style={{marginBottom:16}}><Slide value={d.body.mood} onChange={v=>upd("body","mood",v)}/></div>
-        <Lbl>Energy (1-10)</Lbl>
+        <LblMuted>Energy (1-10)</LblMuted>
         <Slide value={d.body.energy} onChange={v=>upd("body","energy",v)}/>
       </Card>
 
       <Card>
-        <Title>Notes 📝</Title>
-        <textarea value={d.notes||""} onChange={e=>updTop("notes",e.target.value)} placeholder="PBs, symptoms, food, anything..." rows={3}
-          style={{border:`1.5px solid ${C.border}`,borderRadius:12,padding:"11px 14px",fontSize:13,fontFamily:F,color:C.text,background:C.bgSoft,width:"100%",boxSizing:"border-box",outline:"none",resize:"none",lineHeight:1.6}}/>
+        <H1 italic>Notes 📝</H1>
+        <TextArea value={d.notes||""} onChange={v=>updTop("notes",v)} placeholder="PBs, symptoms, food, anything on your mind..."/>
       </Card>
     </div>
   );
@@ -634,20 +588,20 @@ function Sleep({entries}) {
   const awP=l7.filter(e=>e.awake).map(e=>({x:e.dt,y:parseFloat(e.awake),label:e.dt.slice(5)}));
   return (
     <div>
-      <Card style={{background:"linear-gradient(135deg,#1a1035,#2d1f4a)",border:"none"}}>
-        <Title color="#e8d5f5">Sleep Overview 🌙</Title>
-        {[["Avg duration",av(se,"hrs"),"hrs","#c8b4d8"],["Avg REM",av(se,"rem"),"%","#9b84c0"],["Avg Deep",av(se,"deep"),"%","#7055a8"],["Avg Light",av(se,"light"),"%","#b4c8d8"],["Avg Awake",av(se,"awake"),"%","#b8843a"],["Days logged",se.length,"","#f2c4d0"]].map(([l,v,u,col])=>(
+      <CardDark>
+        <H1 color="#f0e8f8">Sleep Overview 🌙</H1>
+        {[["Avg Duration",av(se,"hrs"),"hrs","#e8c8f0"],["Avg REM",av(se,"rem"),"%","#c8b0e0"],["Avg Deep",av(se,"deep"),"%","#b898d8"],["Avg Light",av(se,"light"),"%","#c8d8e8"],["Avg Awake",av(se,"awake"),"%","#e8c8a8"],["Days Logged",se.length,"","#f0d0c8"]].map(([l,v,u,col])=>(
           <div key={l} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"9px 0",borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
-            <span style={{fontFamily:F,fontSize:13,color:"rgba(255,255,255,0.6)"}}>{l}</span>
-            <span style={{fontFamily:F,fontSize:14,fontWeight:700,color:col}}>{v!=null?v:"–"}{v!=null&&u?" "+u:""}</span>
+            <span style={{fontFamily:FR,fontSize:13,fontWeight:500,color:"rgba(255,255,255,0.6)"}}>{l}</span>
+            <span style={{fontFamily:FP,fontSize:15,fontWeight:600,color:col}}>{v!=null?v:"—"}{v!=null&&u?" "+u:""}</span>
           </div>
         ))}
-      </Card>
-      <Card><Title>Duration - Last 7 Days</Title><Line pts={durP} color={C.blushDeep} h={80}/></Card>
-      {remP.length>=2&&<Card><Title>REM % - Last 7 Days</Title><Line pts={remP} color="#9b84c0" h={70}/></Card>}
-      {depP.length>=2&&<Card><Title>Deep Sleep % - Last 7 Days</Title><Line pts={depP} color="#5b6af0" h={70}/></Card>}
-      {awP.length>=2&&<Card><Title>Awake % - Last 7 Days</Title><Line pts={awP} color={C.gold} h={70}/></Card>}
-      {!se.length&&<div style={{textAlign:"center",padding:"60px 20px"}}><p style={{fontSize:40}}>🌙</p><p style={{fontFamily:F,color:C.textLight,fontStyle:"italic"}}>No sleep data yet</p></div>}
+      </CardDark>
+      <Card><H1 italic>Duration — Last 7 Days</H1><LineChart pts={durP} color={C.coral} h={80}/></Card>
+      {remP.length>=2&&<Card><H1 italic>REM % — Last 7 Days</H1><LineChart pts={remP} color="#7058a8" h={70}/></Card>}
+      {depP.length>=2&&<Card><H1 italic>Deep Sleep % — Last 7 Days</H1><LineChart pts={depP} color="#5068b0" h={70}/></Card>}
+      {awP.length>=2&&<Card><H1 italic>Awake % — Last 7 Days</H1><LineChart pts={awP} color="#b87830" h={70}/></Card>}
+      {!se.length&&<div style={{textAlign:"center",padding:"60px 20px"}}><p style={{fontSize:40}}>🌙</p><p style={{fontFamily:FR,fontWeight:500,color:C.textMuted,fontStyle:"italic",marginTop:8}}>No sleep data yet</p></div>}
     </div>
   );
 }
@@ -665,36 +619,35 @@ function Fitness({data}) {
   const gW=[];
   for(let w=-7;w<=wOff;w++){const wd2=weekDays(w);const gc=wd2.filter(d=>data[d]?.fitness?.gym===true).length;const wl=new Date(wd2[0]+"T00:00:00").toLocaleDateString("default",{month:"short",day:"numeric"});gW.push({x:wd2[0],y:gc,label:wl.slice(0,5)});}
   const wl=wOff===0?"This Week":wOff===-1?"Last Week":`${Math.abs(wOff)} weeks ago`;
-
   return (
     <div>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
-        <button onClick={()=>setWOff(wOff-1)} style={{background:"#fff",border:`1.5px solid ${C.border}`,borderRadius:12,padding:"8px 16px",cursor:"pointer",fontFamily:F,fontSize:13,color:C.textSoft}}>←</button>
-        <span style={{fontFamily:FS,fontSize:20,color:C.text,fontWeight:500}}>{wl}</span>
-        <button onClick={()=>setWOff(Math.min(0,wOff+1))} disabled={wOff>=0} style={{background:"#fff",border:`1.5px solid ${C.border}`,borderRadius:12,padding:"8px 16px",cursor:wOff>=0?"default":"pointer",fontFamily:F,fontSize:13,color:C.textSoft,opacity:wOff>=0?0.3:1}}>→</button>
+        <button onClick={()=>setWOff(wOff-1)} style={{background:"rgba(255,255,255,0.6)",border:`1.5px solid ${C.border}`,borderRadius:12,padding:"9px 16px",cursor:"pointer",fontFamily:FR,fontSize:12,fontWeight:700,color:C.textSoft}}>←</button>
+        <p style={{fontFamily:FP,fontSize:20,fontWeight:600,color:C.plum,margin:0,fontStyle:"italic"}}>{wl}</p>
+        <button onClick={()=>setWOff(Math.min(0,wOff+1))} disabled={wOff>=0} style={{background:"rgba(255,255,255,0.6)",border:`1.5px solid ${C.border}`,borderRadius:12,padding:"9px 16px",cursor:wOff>=0?"default":"pointer",fontFamily:FR,fontSize:12,fontWeight:700,color:C.textSoft,opacity:wOff>=0?0.3:1}}>→</button>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
-        {[{l:"Gym",v:gd,i:"🏋️",c:C.sage,bg:C.sageLight},{l:"Rest days",v:rd,i:"🌿",c:"#7055a8",bg:C.lavLight},{l:"Walks",v:wks,i:"🚶",c:C.gold,bg:C.goldLight},{l:"Sauna",v:sns,i:"🧖",c:"#c07050",bg:"#fdf0eb"},{l:"Total water",v:`${(tw*0.5).toFixed(1)}L`,i:"💧",c:"#5b9fd8",bg:"#edf5fb"}].map(({l,v,i,c,bg})=>(
-          <div key={l} style={{background:bg,borderRadius:16,padding:"14px 16px",border:`1px solid ${c}30`}}>
-            <p style={{fontFamily:F,fontSize:10,color:c,margin:"0 0 4px",letterSpacing:"0.07em",textTransform:"uppercase",fontWeight:600}}>{i} {l}</p>
-            <p style={{fontFamily:F,fontSize:22,fontWeight:700,color:C.text,margin:0}}>{v}</p>
+        {[{l:"Gym sessions",v:gd,c:C.coral,bg:C.coralLight},{l:"Rest days",v:rd,c:"#7058a8",bg:"#f0eaf8"},{l:"Walks",v:wks,c:"#5a8a5a",bg:"#eaf4ea"},{l:"Sauna",v:sns,c:"#b87830",bg:"#fdf0e0"},{l:"Total water",v:`${(tw*0.5).toFixed(1)}L`,c:"#5080b8",bg:"#e8f0f8"}].map(({l,v,c,bg})=>(
+          <div key={l} style={{background:bg,borderRadius:16,padding:"16px",border:`1px solid ${c}30`}}>
+            <p style={{fontFamily:FR,fontSize:9,fontWeight:700,letterSpacing:"0.16em",textTransform:"uppercase",color:c,margin:"0 0 6px"}}>{l}</p>
+            <p style={{fontFamily:FP,fontSize:24,fontWeight:700,color:C.plum,margin:0}}>{v}</p>
           </div>
         ))}
       </div>
-      {as&&<Card style={{background:`linear-gradient(135deg,${C.sageLight},${C.goldLight})`,border:`1px solid ${C.sage}`}}>
-        <p style={{fontFamily:F,fontSize:11,color:"#6a9a6a",margin:"0 0 4px",letterSpacing:"0.07em",textTransform:"uppercase",fontWeight:600}}>🏃 Avg Daily Steps</p>
-        <p style={{fontFamily:FS,fontSize:32,color:C.text,margin:"0 0 2px",fontWeight:500}}>{as.toLocaleString()}</p>
-        <p style={{fontFamily:F,fontSize:12,color:C.textSoft,margin:0}}>Total: {ts.toLocaleString()} steps</p>
+      {as&&<Card style={{background:`linear-gradient(145deg,#fde8e0,#f8e0d0)`,border:`1px solid ${C.coral}30`}}>
+        <p style={{fontFamily:FR,fontSize:9,fontWeight:700,letterSpacing:"0.18em",textTransform:"uppercase",color:C.coral,margin:"0 0 6px"}}>Avg Daily Steps</p>
+        <p style={{fontFamily:FP,fontSize:34,fontWeight:700,color:C.plum,margin:"0 0 2px"}}>{as.toLocaleString()}</p>
+        <p style={{fontFamily:FR,fontSize:12,fontWeight:500,color:C.textSoft,margin:0}}>Total: {ts.toLocaleString()} steps this week</p>
       </Card>}
-      <Card><Title>Steps This Week</Title><Bars pts={sP} color={C.sage}/></Card>
-      {gW.length>=2&&<Card><Title>Gym Sessions - Last 8 Weeks</Title><Bars pts={gW.slice(-8)} color={C.blushDeep}/></Card>}
+      <Card><H1 italic>Steps This Week</H1><BarChart pts={sP} color={C.coral}/></Card>
+      {gW.length>=2&&<Card><H1 italic>Gym Sessions — Last 8 Weeks</H1><BarChart pts={gW.slice(-8)} color="#7058a8"/></Card>}
     </div>
   );
 }
 
 // ── Body ─────────────────────────────────────────────────────────
 
-function Body({data,setData,profile,setProfile}) {
+function Body({data, setData, profile, setProfile}) {
   const [showCI,setShowCI]=useState(false);
   const [showAdv,setShowAdv]=useState(false);
   const [showMeas,setShowMeas]=useState(false);
@@ -704,12 +657,11 @@ function Body({data,setData,profile,setProfile}) {
   const [measDate,setMeasDate]=useState(toDay());
 
   const ents=Object.entries(data).sort(([a],[b])=>a.localeCompare(b));
-  const withW=ents.filter(([,d])=>d.body?.weight);
-  const latW=withW.length?parseW(withW[withW.length-1][1].body?.weight):null;
   const moodP=ents.filter(([,d])=>d.body?.mood).map(([dt,d])=>({x:dt,y:parseFloat(d.body.mood),label:dt.slice(5)}));
   const enP=ents.filter(([,d])=>d.body?.energy).map(([dt,d])=>({x:dt,y:parseFloat(d.body.energy),label:dt.slice(5)}));
   const wbE=Object.entries(wbData).sort(([a],[b])=>a.localeCompare(b));
   const latWB=wbE.length?wbE[wbE.length-1][1]:null;
+  const latW=(() => { const we=ents.filter(([,d])=>d.body?.weight); return we.length?parseW(we[we.length-1][1].body?.weight):null; })();
   const bmi=latW?calcBMI(latW,profile.height):null;
   const l12=wbE.slice(-12);
   const wP=l12.filter(([,w])=>w.weight).map(([dt,w])=>({x:dt,y:parseFloat(w.weight),label:dt.slice(5)}));
@@ -721,31 +673,13 @@ function Body({data,setData,profile,setProfile}) {
   const measE=Object.entries(measData).sort(([a],[b])=>a.localeCompare(b));
   const latMeas=measE.length?measE[measE.length-1][1]:null;
 
-  function updWB(key,val){
-    const c=String(val).replace(",",".");
-    const next={...wbData,[ciDate]:{...curWB,[key]:c}};
-    setWBData(next); saveWB(next);
-  }
-  function updMeas(key,val){
-    const next={...measData,[measDate]:{...curMeas,[key]:val}};
-    setMeasData(next); saveMeas(next);
-  }
-  function updProfile(key,val){const np={...profile,[key]:val};setProfile(np);saveP(np);}
+  function updWB(key,val){const c=String(val).replace(",",".");const next={...wbData,[ciDate]:{...curWB,[key]:c}};setWBData(next);saveWB(next);}
+  function updMeas(key,val){const next={...measData,[measDate]:{...curMeas,[key]:val}};setMeasData(next);saveMeas(next);}
+  function updP(key,val){const np={...profile,[key]:val};setProfile(np);saveP(np);}
 
   const allPhotos=Object.values(data).flatMap(d=>d.photos||[]);
-
-  function addPhoto(p){
-    const t=toDay(), prev=data[t]||emptyDay();
-    setData({...data,[t]:{...prev,photos:[...(prev.photos||[]),p]}});
-  }
-  function removePhoto(i){
-    const removed=allPhotos[i];
-    const nd={};
-    for(const [dt,d] of Object.entries(data)){
-      nd[dt]={...d,photos:(d.photos||[]).filter(p=>p.ts!==removed?.ts)};
-    }
-    setData(nd);
-  }
+  function addPhoto(p){const t=toDay(),prev=data[t]||emptyDay();setData({...data,[t]:{...prev,photos:[...(prev.photos||[]),p]}});}
+  function removePhoto(i){const removed=allPhotos[i];const nd={};for(const [dt,d] of Object.entries(data)){nd[dt]={...d,photos:(d.photos||[]).filter(p=>p.ts!==removed?.ts)};}setData(nd);}
 
   const CORE=[{k:"weight",l:"Weight",u:"kg"},{k:"bodyFat",l:"Body Fat",u:"%"},{k:"muscleMass",l:"Muscle Mass",u:"kg"},{k:"skeletalMuscle",l:"Skeletal Muscle",u:"kg"},{k:"waist",l:"Waist",u:"cm"},{k:"hips",l:"Hips",u:"cm"},{k:"water",l:"Water",u:"%"},{k:"visceralFat",l:"Visceral Fat",u:""},{k:"bmr",l:"BMR",u:"kcal"},{k:"bmi",l:"BMI",u:""}];
   const ADV=[{k:"protein",l:"Protein",u:"%"},{k:"boneMass",l:"Bone Mass",u:"kg"},{k:"subcutaneousFat",l:"Subcut Fat",u:"%"},{k:"bodyType",l:"Body Type",u:""},{k:"bodyAge",l:"Body Age",u:""},{k:"bodyFatMass",l:"Fat Mass",u:"kg"},{k:"leanBodyMass",l:"Lean Body Mass",u:"kg"}];
@@ -753,161 +687,134 @@ function Body({data,setData,profile,setProfile}) {
 
   return (
     <div>
-      <Card style={{background:`linear-gradient(135deg,${C.blushLight},${C.lavLight})`,border:`1px solid ${C.border}`}}>
-        <Title>Core Metrics ✨</Title>
+      <div style={{background:"linear-gradient(145deg,#e0d4f0,#d4c4e8)",border:`1px solid ${C.lavender}`,borderRadius:20,padding:"22px",marginBottom:12}}>
+        <H1>Core Metrics ✨</H1>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
-          {[{l:"Weight",v:latW?`${fmtW(latW)} kg`:null,i:"⚖️",c:C.blushDeep},{l:"BMI",v:bmi,i:"📊",c:C.lavender},{l:"Body Fat",v:latWB?.bodyFat?`${latWB.bodyFat}%`:null,i:"🔥",c:"#d06050"},{l:"Muscle Mass",v:latWB?.muscleMass?`${latWB.muscleMass} kg`:null,i:"💪",c:"#4a8a4a"},{l:"Skeletal Muscle",v:latWB?.skeletalMuscle?`${latWB.skeletalMuscle} kg`:null,i:"🦴",c:"#7055a8"},{l:"Waist",v:latWB?.waist?`${latWB.waist} cm`:latMeas?.waist?`${latMeas.waist} cm`:null,i:"📏",c:C.gold},{l:"Hips",v:latWB?.hips?`${latWB.hips} cm`:latMeas?.hips?`${latMeas.hips} cm`:null,i:"📐",c:C.gold},{l:"Water %",v:latWB?.water?`${latWB.water}%`:null,i:"💧",c:"#5b9fd8"},{l:"Visceral Fat",v:latWB?.visceralFat||null,i:"🫀",c:"#c05050"},{l:"BMR",v:latWB?.bmr?`${latWB.bmr} kcal`:null,i:"⚡",c:C.gold}].map(({l,v,i,c})=>(
-            <div key={l} style={{background:"rgba(255,255,255,0.75)",borderRadius:12,padding:"10px 12px"}}>
-              <p style={{fontFamily:F,fontSize:10,color:C.textSoft,margin:"0 0 3px",letterSpacing:"0.06em",textTransform:"uppercase"}}>{i} {l}</p>
-              <p style={{fontFamily:F,fontSize:15,fontWeight:700,color:v?c:C.textLight,margin:0}}>{v||"–"}</p>
+          {[{l:"Weight",v:latW?`${fmtW(latW)} kg`:null,c:C.coral},{l:"BMI",v:bmi,c:"#7058a8"},{l:"Body Fat",v:latWB?.bodyFat?`${latWB.bodyFat}%`:null,c:"#a84820"},{l:"Muscle Mass",v:latWB?.muscleMass?`${latWB.muscleMass} kg`:null,c:"#5a8a5a"},{l:"Skeletal Muscle",v:latWB?.skeletalMuscle?`${latWB.skeletalMuscle} kg`:null,c:"#7058a8"},{l:"Waist",v:latWB?.waist?`${latWB.waist} cm`:latMeas?.waist?`${latMeas.waist} cm`:null,c:"#b87830"},{l:"Water %",v:latWB?.water?`${latWB.water}%`:null,c:"#5080b8"},{l:"Visceral Fat",v:latWB?.visceralFat||null,c:"#a84820"},{l:"BMR",v:latWB?.bmr?`${latWB.bmr} kcal`:null,c:"#b87830"},{l:"Body Age",v:latWB?.bodyAge||null,c:"#7058a8"}].map(({l,v,c})=>(
+            <div key={l} style={{background:"rgba(255,255,255,0.55)",borderRadius:12,padding:"12px"}}>
+              <p style={{fontFamily:FR,fontSize:9,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:C.textMuted,margin:"0 0 4px"}}>{l}</p>
+              <p style={{fontFamily:FP,fontSize:16,fontWeight:600,color:v?c:C.textMuted,margin:0}}>{v||"—"}</p>
             </div>
           ))}
         </div>
-        <Lbl>Height (saved once)</Lbl>
-        <input type="number" inputMode="numeric" value={profile.height||""} onChange={e=>updProfile("height",e.target.value)} placeholder="165"
-          style={{border:`1.5px solid ${C.border}`,borderRadius:12,padding:"10px 14px",fontSize:14,fontFamily:F,color:C.text,background:"rgba(255,255,255,0.8)",width:"100%",boxSizing:"border-box",outline:"none"}}/>
-      </Card>
+        <LblMuted>Height (saved once)</LblMuted>
+        <input type="number" inputMode="numeric" value={profile.height||""} onChange={e=>updP("height",e.target.value)} placeholder="165"
+          style={{border:`1.5px solid ${C.border}`,borderRadius:12,padding:"10px 14px",fontSize:14,fontFamily:FR,color:C.text,background:"rgba(255,255,255,0.7)",width:"100%",boxSizing:"border-box",outline:"none",fontWeight:500}}/>
+      </div>
 
-      {wP.length>=2&&<Card><Title>Weight - Last 12 Weeks</Title><Line pts={wP} color={C.blushDeep} h={80}/></Card>}
+      {wP.length>=2&&<Card><H1 italic>Weight — Last 12 Weeks</H1><LineChart pts={wP} color={C.coral} h={80}/></Card>}
+      {(fP.length>=2||mP.length>=2)&&<Card><H1 italic>Body Composition Trend</H1><p style={{fontFamily:FR,fontSize:12,fontWeight:500,color:C.textMuted,margin:"-8px 0 12px"}}>Am I losing fat or muscle?</p><MultiLine series={[{pts:fP,color:"#a84820",label:"Body Fat %"},{pts:mP,color:"#5a8a5a",label:"Muscle kg"},{pts:waP,color:"#5080b8",label:"Water %"}].filter(s=>s.pts.length>=2)} h={90}/></Card>}
+      {moodP.length>=2&&<Card><H1 italic>Mood Over Time</H1><LineChart pts={moodP} color="#7058a8" h={70}/></Card>}
+      {enP.length>=2&&<Card><H1 italic>Energy Over Time</H1><LineChart pts={enP} color="#b87830" h={70}/></Card>}
 
-      {(fP.length>=2||mP.length>=2)&&(
-        <Card>
-          <Title>Body Composition Trend</Title>
-          <p style={{fontFamily:F,fontSize:12,color:C.textSoft,margin:"-8px 0 12px"}}>Am I losing fat or muscle?</p>
-          <MultiLine series={[{pts:fP,color:"#d06050",label:"Body Fat %"},{pts:mP,color:"#4a8a4a",label:"Muscle kg"},{pts:waP,color:"#5b9fd8",label:"Water %"}].filter(s=>s.pts.length>=2)} h={90}/>
-        </Card>
-      )}
-
-      {moodP.length>=2&&<Card><Title>Mood Over Time 💫</Title><Line pts={moodP} color={C.lavender} h={70}/></Card>}
-      {enP.length>=2&&<Card><Title>Energy Over Time ⚡</Title><Line pts={enP} color={C.gold} h={70}/></Card>}
-
-      <Card style={{border:`1.5px solid ${C.blush}`,background:C.blushLight}}>
+      {/* Weekly check-in */}
+      <Card style={{background:C.coralLight,border:`1.5px solid ${C.coral}50`}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
           <div>
-            <Title style={{margin:0}}>Weekly Body Check-In</Title>
-            <p style={{fontFamily:F,fontSize:12,color:C.textSoft,margin:"4px 0 0"}}>Copy from Eufy Life - go back up to a year</p>
+            <H1 style={{margin:0}}>Weekly Body Check-In</H1>
+            <p style={{fontFamily:FR,fontSize:12,fontWeight:500,color:C.textSoft,margin:"4px 0 0"}}>Copy from Eufy Life — go back up to a year</p>
           </div>
-          <button onClick={()=>setShowCI(!showCI)} style={{padding:"8px 16px",borderRadius:12,border:`1.5px solid ${C.blushDeep}`,background:showCI?C.blushDeep:"transparent",color:showCI?"#fff":C.blushDeep,fontFamily:F,fontSize:12,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>
+          <button onClick={()=>setShowCI(!showCI)} style={{padding:"9px 16px",borderRadius:12,border:`1.5px solid ${C.coral}`,background:showCI?C.coral:"transparent",color:showCI?"#fff":C.coral,fontFamily:FR,fontSize:11,fontWeight:700,letterSpacing:"0.08em",cursor:"pointer",whiteSpace:"nowrap"}}>
             {showCI?"Done":"+ Add"}
           </button>
         </div>
-        {wbE.length>0&&!showCI&&<p style={{fontFamily:F,fontSize:12,color:C.blushDeep,margin:"0 0 14px",fontWeight:600}}>{wbE.length} check-ins logged</p>}
+        {wbE.length>0&&!showCI&&<p style={{fontFamily:FR,fontSize:12,fontWeight:600,color:C.coral,margin:"0 0 14px"}}>{wbE.length} check-ins logged</p>}
         {showCI&&(
           <div>
-            <p style={{fontFamily:F,fontSize:11,color:C.blushDeep,margin:"14px 0 8px",fontWeight:700,letterSpacing:"0.06em",textTransform:"uppercase"}}>Select Date</p>
+            <p style={{fontFamily:FR,fontSize:9,fontWeight:700,letterSpacing:"0.18em",textTransform:"uppercase",color:C.coral,margin:"14px 0 8px"}}>Select Date</p>
             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16}}>
-              <button onClick={()=>{const d=new Date(ciDate+"T00:00:00");d.setDate(d.getDate()-7);setCIDate(d.toISOString().split("T")[0]);}} style={{width:38,height:38,borderRadius:10,border:`1.5px solid ${C.blush}`,background:"#fff",fontSize:16,cursor:"pointer",color:C.blushDeep,flexShrink:0}}>←</button>
-              <div style={{flex:1,textAlign:"center",background:"#fff",borderRadius:10,padding:"9px 6px",border:`1px solid ${C.blush}`}}>
-                <p style={{fontFamily:F,fontSize:13,fontWeight:700,color:C.text,margin:0}}>{new Date(ciDate+"T00:00:00").toLocaleDateString("default",{weekday:"short",month:"short",day:"numeric",year:"numeric"})}</p>
-                {wbData[ciDate]&&<p style={{fontFamily:F,fontSize:11,color:C.blushDeep,margin:"2px 0 0",fontWeight:600}}>Saved</p>}
+              <button onClick={()=>{const d=new Date(ciDate+"T00:00:00");d.setDate(d.getDate()-7);setCIDate(d.toISOString().split("T")[0]);}} style={{width:38,height:38,borderRadius:10,border:`1.5px solid ${C.coral}50`,background:"#fff",fontSize:16,cursor:"pointer",color:C.coral,flexShrink:0}}>←</button>
+              <div style={{flex:1,textAlign:"center",background:"#fff",borderRadius:10,padding:"9px",border:`1px solid ${C.coral}50`}}>
+                <p style={{fontFamily:FR,fontSize:13,fontWeight:700,color:C.text,margin:0}}>{new Date(ciDate+"T00:00:00").toLocaleDateString("default",{weekday:"short",month:"short",day:"numeric",year:"numeric"})}</p>
+                {wbData[ciDate]&&<p style={{fontFamily:FR,fontSize:11,fontWeight:600,color:C.coral,margin:"2px 0 0"}}>Saved ✓</p>}
               </div>
-              <button onClick={()=>{const d=new Date(ciDate+"T00:00:00");d.setDate(d.getDate()+7);const n=d.toISOString().split("T")[0];if(n<=toDay())setCIDate(n);}} style={{width:38,height:38,borderRadius:10,border:`1.5px solid ${C.blush}`,background:"#fff",fontSize:16,cursor:"pointer",color:C.blushDeep,flexShrink:0,opacity:ciDate>=toDay()?0.3:1}}>→</button>
+              <button onClick={()=>{const d=new Date(ciDate+"T00:00:00");d.setDate(d.getDate()+7);const n=d.toISOString().split("T")[0];if(n<=toDay())setCIDate(n);}} style={{width:38,height:38,borderRadius:10,border:`1.5px solid ${C.coral}50`,background:"#fff",fontSize:16,cursor:"pointer",color:C.coral,flexShrink:0,opacity:ciDate>=toDay()?0.3:1}}>→</button>
             </div>
-            <p style={{fontFamily:F,fontSize:11,color:C.textSoft,margin:"0 0 12px"}}>Use arrows to jump week by week</p>
-            <p style={{fontFamily:F,fontSize:11,color:C.blushDeep,margin:"0 0 8px",fontWeight:700,letterSpacing:"0.06em",textTransform:"uppercase"}}>Core Metrics</p>
+            <p style={{fontFamily:FR,fontSize:9,fontWeight:700,letterSpacing:"0.18em",textTransform:"uppercase",color:C.coral,margin:"0 0 8px"}}>Core Metrics</p>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
               {CORE.map(({k,l,u})=><WBField key={k} label={l} unit={u} value={curWB[k]} onChange={v=>updWB(k,v)}/>)}
             </div>
-            <button onClick={()=>setShowAdv(!showAdv)} style={{width:"100%",padding:"10px",borderRadius:10,border:`1px solid ${C.blush}`,background:"rgba(255,255,255,0.6)",color:C.textSoft,fontFamily:F,fontSize:12,fontWeight:600,cursor:"pointer",marginBottom:showAdv?12:0}}>
+            <button onClick={()=>setShowAdv(!showAdv)} style={{width:"100%",padding:"10px",borderRadius:10,border:`1px solid ${C.coral}50`,background:"rgba(255,255,255,0.6)",color:C.textSoft,fontFamily:FR,fontSize:11,fontWeight:700,letterSpacing:"0.08em",cursor:"pointer",marginBottom:showAdv?12:0}}>
               {showAdv?"Hide Advanced":"Show Advanced"}
             </button>
-            {showAdv&&(
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14,marginTop:12}}>
-                {ADV.map(({k,l,u})=><WBField key={k} label={l} unit={u} value={curWB[k]} onChange={v=>updWB(k,v)}/>)}
+            {showAdv&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14,marginTop:12}}>{ADV.map(({k,l,u})=><WBField key={k} label={l} unit={u} value={curWB[k]} onChange={v=>updWB(k,v)}/>)}</div>}
+            {wbE.length>0&&<div style={{marginTop:16}}>
+              <p style={{fontFamily:FR,fontSize:9,fontWeight:700,letterSpacing:"0.16em",textTransform:"uppercase",color:C.textMuted,marginBottom:8}}>All Check-Ins</p>
+              <div style={{maxHeight:160,overflowY:"auto"}}>
+                {wbE.slice().reverse().map(([dt,w])=>(
+                  <div key={dt} onClick={()=>setCIDate(dt)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"9px 12px",borderRadius:10,background:dt===ciDate?"#fff":"rgba(255,255,255,0.5)",border:`1px solid ${dt===ciDate?C.coral:C.coral+"40"}`,marginBottom:5,cursor:"pointer"}}>
+                    <span style={{fontFamily:FR,fontSize:13,fontWeight:dt===ciDate?700:500,color:dt===ciDate?C.coral:C.text}}>{dt}</span>
+                    <span style={{fontFamily:FR,fontSize:12,fontWeight:500,color:C.textMuted}}>{w.weight?`${w.weight}kg`:""}{w.bodyFat?` · ${w.bodyFat}%`:""}</span>
+                  </div>
+                ))}
               </div>
-            )}
-            {wbE.length>0&&(
-              <div style={{marginTop:16}}>
-                <p style={{fontFamily:F,fontSize:11,color:C.textLight,marginBottom:8,letterSpacing:"0.06em",textTransform:"uppercase"}}>All check-ins</p>
-                <div style={{maxHeight:160,overflowY:"auto"}}>
-                  {wbE.slice().reverse().map(([dt,w])=>(
-                    <div key={dt} onClick={()=>setCIDate(dt)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"9px 12px",borderRadius:10,background:dt===ciDate?"#fff":"rgba(255,255,255,0.5)",border:`1px solid ${dt===ciDate?C.blushDeep:C.blush}`,marginBottom:5,cursor:"pointer"}}>
-                      <span style={{fontFamily:F,fontSize:13,fontWeight:dt===ciDate?700:400,color:dt===ciDate?C.blushDeep:C.text}}>{dt}</span>
-                      <span style={{fontFamily:F,fontSize:12,color:C.textSoft}}>{w.weight?`${w.weight}kg`:""}{w.bodyFat?` ${w.bodyFat}%fat`:""}</span>
-                    </div>
-                  ))}
-                </div>
+            </div>}
+          </div>
+        )}
+        {latWB&&!showCI&&<div>
+          <p style={{fontFamily:FR,fontSize:11,fontWeight:500,color:C.textMuted,marginBottom:10}}>Latest: {wbE[wbE.length-1][0]}</p>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+            {CORE.filter(f=>latWB[f.k]).map(({k,l,u})=>(
+              <div key={k} style={{background:"rgba(255,255,255,0.8)",borderRadius:10,padding:"10px 12px",border:`1px solid ${C.coral}30`}}>
+                <p style={{fontFamily:FR,fontSize:9,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:C.textMuted,margin:"0 0 3px"}}>{l}</p>
+                <p style={{fontFamily:FP,fontSize:15,fontWeight:600,color:C.text,margin:0}}>{latWB[k]}{u?" "+u:""}</p>
               </div>
-            )}
+            ))}
           </div>
-        )}
-        {latWB&&!showCI&&(
-          <div>
-            <p style={{fontFamily:F,fontSize:11,color:C.textLight,marginBottom:10}}>Latest: {wbE[wbE.length-1][0]}</p>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-              {CORE.filter(f=>latWB[f.k]).map(({k,l,u})=>(
-                <div key={k} style={{background:"rgba(255,255,255,0.8)",borderRadius:10,padding:"10px 12px",border:`1px solid ${C.blush}`}}>
-                  <p style={{fontFamily:F,fontSize:10,color:C.textLight,margin:"0 0 3px",textTransform:"uppercase",letterSpacing:"0.06em"}}>{l}</p>
-                  <p style={{fontFamily:F,fontSize:15,fontWeight:700,color:C.text,margin:0}}>{latWB[k]}{u?" "+u:""}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-        {!latWB&&!showCI&&(
-          <div style={{textAlign:"center",padding:"20px 0"}}>
-            <p style={{fontSize:32,margin:"0 0 8px"}}>⚖️</p>
-            <p style={{fontFamily:F,fontSize:13,color:C.textLight,fontStyle:"italic"}}>Tap "+ Add" to start entering your Eufy data</p>
-          </div>
-        )}
+        </div>}
+        {!latWB&&!showCI&&<div style={{textAlign:"center",padding:"20px 0"}}><p style={{fontSize:32,margin:"0 0 8px"}}>⚖️</p><p style={{fontFamily:FR,fontSize:13,fontWeight:500,color:C.textMuted,fontStyle:"italic"}}>Tap "+ Add" to start entering your Eufy data</p></div>}
       </Card>
 
-      <Card style={{border:`1.5px solid ${C.lavender}`,background:C.lavLight}}>
+      {/* Measurements */}
+      <Card style={{background:"#f0eaf8",border:`1.5px solid #c0a8e0`}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
           <div>
-            <Title style={{margin:0}}>Measurements 📏</Title>
-            <p style={{fontFamily:F,fontSize:12,color:C.textSoft,margin:"4px 0 0"}}>Monthly - these change when the scale doesn't</p>
+            <H1 style={{margin:0}}>Measurements 📏</H1>
+            <p style={{fontFamily:FR,fontSize:12,fontWeight:500,color:C.textSoft,margin:"4px 0 0"}}>Monthly — these change when the scale doesn't</p>
           </div>
-          <button onClick={()=>setShowMeas(!showMeas)} style={{padding:"8px 16px",borderRadius:12,border:`1.5px solid ${C.lavender}`,background:showMeas?C.lavender:"transparent",color:showMeas?"#fff":C.lavender,fontFamily:F,fontSize:12,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>
+          <button onClick={()=>setShowMeas(!showMeas)} style={{padding:"9px 16px",borderRadius:12,border:"1.5px solid #9070c0",background:showMeas?"#9070c0":"transparent",color:showMeas?"#fff":"#9070c0",fontFamily:FR,fontSize:11,fontWeight:700,letterSpacing:"0.08em",cursor:"pointer",whiteSpace:"nowrap"}}>
             {showMeas?"Done":"+ Add"}
           </button>
         </div>
         {showMeas&&(
           <div>
             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14,marginTop:12}}>
-              <button onClick={()=>{const d=new Date(measDate+"T00:00:00");d.setMonth(d.getMonth()-1);setMeasDate(d.toISOString().split("T")[0]);}} style={{width:36,height:36,borderRadius:10,border:`1.5px solid ${C.lavender}`,background:"#fff",fontSize:15,cursor:"pointer",color:C.lavender,flexShrink:0}}>←</button>
-              <div style={{flex:1,textAlign:"center",background:"#fff",borderRadius:10,padding:"8px",border:`1px solid ${C.lavender}`}}>
-                <p style={{fontFamily:F,fontSize:13,fontWeight:700,color:C.text,margin:0}}>{new Date(measDate+"T00:00:00").toLocaleDateString("default",{month:"long",year:"numeric"})}</p>
-                {measData[measDate]&&<p style={{fontFamily:F,fontSize:11,color:C.lavender,margin:"2px 0 0",fontWeight:600}}>Saved</p>}
+              <button onClick={()=>{const d=new Date(measDate+"T00:00:00");d.setMonth(d.getMonth()-1);setMeasDate(d.toISOString().split("T")[0]);}} style={{width:36,height:36,borderRadius:10,border:"1.5px solid #c0a8e0",background:"#fff",fontSize:15,cursor:"pointer",color:"#9070c0",flexShrink:0}}>←</button>
+              <div style={{flex:1,textAlign:"center",background:"#fff",borderRadius:10,padding:"8px",border:"1px solid #c0a8e0"}}>
+                <p style={{fontFamily:FR,fontSize:13,fontWeight:700,color:C.text,margin:0}}>{new Date(measDate+"T00:00:00").toLocaleDateString("default",{month:"long",year:"numeric"})}</p>
+                {measData[measDate]&&<p style={{fontFamily:FR,fontSize:11,fontWeight:600,color:"#9070c0",margin:"2px 0 0"}}>Saved ✓</p>}
               </div>
-              <button onClick={()=>{const d=new Date(measDate+"T00:00:00");d.setMonth(d.getMonth()+1);const n=d.toISOString().split("T")[0];if(n<=toDay())setMeasDate(n);}} style={{width:36,height:36,borderRadius:10,border:`1.5px solid ${C.lavender}`,background:"#fff",fontSize:15,cursor:"pointer",color:C.lavender,flexShrink:0}}>→</button>
+              <button onClick={()=>{const d=new Date(measDate+"T00:00:00");d.setMonth(d.getMonth()+1);const n=d.toISOString().split("T")[0];if(n<=toDay())setMeasDate(n);}} style={{width:36,height:36,borderRadius:10,border:"1.5px solid #c0a8e0",background:"#fff",fontSize:15,cursor:"pointer",color:"#9070c0",flexShrink:0}}>→</button>
             </div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
               {MEAS.map(({k,l,u})=>(
                 <div key={k}>
-                  <p style={{fontFamily:F,fontSize:11,color:C.textSoft,marginBottom:4,fontWeight:600}}>{l} ({u})</p>
-                  <input type="text" inputMode="decimal" value={curMeas[k]||""} onChange={e=>updMeas(k,e.target.value)} placeholder="-"
-                    style={{border:`1.5px solid ${curMeas[k]?C.lavender:C.border}`,borderRadius:10,padding:"9px 12px",fontSize:13,fontFamily:F,color:C.text,background:"#fff",width:"100%",boxSizing:"border-box",outline:"none"}}/>
+                  <p style={{fontFamily:FR,fontSize:10,fontWeight:600,color:C.textSoft,marginBottom:4,letterSpacing:"0.06em"}}>{l} ({u})</p>
+                  <input type="text" inputMode="decimal" value={curMeas[k]||""} onChange={e=>updMeas(k,e.target.value)} placeholder="—"
+                    style={{border:`1.5px solid ${curMeas[k]?"#9070c0":C.border}`,borderRadius:10,padding:"9px 12px",fontSize:13,fontFamily:FR,color:C.text,background:"#fff",width:"100%",boxSizing:"border-box",outline:"none",fontWeight:500}}/>
                 </div>
               ))}
             </div>
           </div>
         )}
-        {latMeas&&!showMeas&&(
-          <div>
-            <p style={{fontFamily:F,fontSize:11,color:C.textLight,marginBottom:10}}>Latest: {measE[measE.length-1][0]}</p>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-              {MEAS.filter(f=>latMeas[f.k]).map(({k,l,u})=>(
-                <div key={k} style={{background:"rgba(255,255,255,0.8)",borderRadius:10,padding:"10px 12px",border:`1px solid ${C.lavender}30`}}>
-                  <p style={{fontFamily:F,fontSize:10,color:C.textLight,margin:"0 0 3px",textTransform:"uppercase",letterSpacing:"0.06em"}}>{l}</p>
-                  <p style={{fontFamily:F,fontSize:15,fontWeight:700,color:C.text,margin:0}}>{latMeas[k]} {u}</p>
-                </div>
-              ))}
-            </div>
+        {latMeas&&!showMeas&&<div>
+          <p style={{fontFamily:FR,fontSize:11,fontWeight:500,color:C.textMuted,marginBottom:10}}>Latest: {measE[measE.length-1][0]}</p>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+            {MEAS.filter(f=>latMeas[f.k]).map(({k,l,u})=>(
+              <div key={k} style={{background:"rgba(255,255,255,0.8)",borderRadius:10,padding:"10px 12px",border:"1px solid #c0a8e040"}}>
+                <p style={{fontFamily:FR,fontSize:9,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:C.textMuted,margin:"0 0 3px"}}>{l}</p>
+                <p style={{fontFamily:FP,fontSize:15,fontWeight:600,color:C.text,margin:0}}>{latMeas[k]} {u}</p>
+              </div>
+            ))}
           </div>
-        )}
-        {!latMeas&&!showMeas&&(
-          <div style={{textAlign:"center",padding:"20px 0"}}>
-            <p style={{fontSize:32,margin:"0 0 8px"}}>📏</p>
-            <p style={{fontFamily:F,fontSize:13,color:C.textLight,fontStyle:"italic"}}>Tap "+ Add" to log your measurements</p>
-          </div>
-        )}
+        </div>}
+        {!latMeas&&!showMeas&&<div style={{textAlign:"center",padding:"20px 0"}}><p style={{fontSize:32,margin:"0 0 8px"}}>📏</p><p style={{fontFamily:FR,fontSize:13,fontWeight:500,color:C.textMuted,fontStyle:"italic"}}>Tap "+ Add" to log your measurements</p></div>}
       </Card>
 
       <Card>
-        <Title>Progress Photos 📷</Title>
-        <p style={{fontFamily:F,fontSize:12,color:C.textLight,marginBottom:14}}>Stored privately on your device only.</p>
-        <Photos photos={allPhotos} onAdd={addPhoto} onRemove={removePhoto}/>
+        <H1 italic>Progress Photos 📷</H1>
+        <p style={{fontFamily:FR,fontSize:12,fontWeight:500,color:C.textMuted,marginBottom:14}}>Stored privately on your device only.</p>
+        <PhotoLogger photos={allPhotos} onAdd={addPhoto} onRemove={removePhoto}/>
       </Card>
     </div>
   );
@@ -915,49 +822,52 @@ function Body({data,setData,profile,setProfile}) {
 
 // ── Insights ─────────────────────────────────────────────────────
 
-function Insightz({data,profile}) {
-  const ins=insights(data);
+function Insights({data, profile}) {
+  const ins=genInsights(data);
   const ents=Object.entries(data).sort(([a],[b])=>a.localeCompare(b));
   const notes=ents.filter(([,d])=>d.notes||d.morningNote);
-  const wd=weekDays(0), wf=wd.map(d=>data[d]?.fitness||{}), ws=wd.map(d=>data[d]?.sleep||{}).filter(s=>s.hrs), wb=wd.map(d=>data[d]?.body||{});
+  const wd=weekDays(0), wf=wd.map(d=>data[d]?.fitness||{}), wsl=wd.map(d=>data[d]?.sleep||{}).filter(s=>s.hrs), wb=wd.map(d=>data[d]?.body||{});
   return (
     <div>
-      <Card style={{background:`linear-gradient(135deg,${C.lavLight},${C.blushLight})`,border:`1px solid ${C.border}`}}>
-        <Title>This Week 🌸</Title>
-        {[["Days logged",wd.filter(d=>data[d]).length,"/ 7"],["Gym sessions",cy(wf,"gym"),""],["Avg sleep",av(ws,"hrs"),"hrs"],["Avg mood",av(wb,"mood"),"/ 10"],["Avg energy",av(wb,"energy"),"/ 10"],["Total steps",sm(wf,"steps").toLocaleString(),""],["Total water",(sm(wf,"water")*0.5).toFixed(1),"L"]].map(([l,v,u])=>(
-          <div key={l} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"9px 0",borderBottom:`1px solid rgba(184,92,130,0.12)`}}>
-            <span style={{fontFamily:F,fontSize:13,color:C.textSoft}}>{l}</span>
-            <span style={{fontFamily:F,fontSize:14,fontWeight:700,color:C.text}}>{v!=null?v:"–"}{v!=null&&u?" "+u:""}</span>
+      <div style={{background:"linear-gradient(145deg,#e0d4f0,#d4c4e8)",border:`1px solid ${C.lavender}`,borderRadius:20,padding:"22px",marginBottom:12}}>
+        <H1 italic>This Week 🌸</H1>
+        {[["Days logged",wd.filter(d=>data[d]).length,"/ 7"],["Gym sessions",cy(wf,"gym"),""],["Avg sleep",av(wsl,"hrs"),"hrs"],["Avg mood",av(wb,"mood"),"/ 10"],["Avg energy",av(wb,"energy"),"/ 10"],["Total steps",sm(wf,"steps").toLocaleString(),""],["Total water",(sm(wf,"water")*0.5).toFixed(1),"L"]].map(([l,v,u])=>(
+          <div key={l} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderBottom:`1px solid rgba(197,90,48,0.12)`}}>
+            <span style={{fontFamily:FR,fontSize:13,fontWeight:500,color:C.textSoft}}>{l}</span>
+            <span style={{fontFamily:FP,fontSize:15,fontWeight:600,color:C.plum}}>{v!=null?v:"—"}{v!=null&&u?" "+u:""}</span>
           </div>
         ))}
-      </Card>
+      </div>
+
       <Card>
-        <Title>Personal Insights ✨</Title>
-        {ins.length===0&&<div style={{textAlign:"center",padding:"20px 0"}}><p style={{fontSize:32,margin:"0 0 8px"}}>🌱</p><p style={{fontFamily:F,fontSize:13,color:C.textLight,fontStyle:"italic"}}>Log at least 5 days to unlock insights</p></div>}
+        <H1 italic>Personal Insights ✨</H1>
+        {ins.length===0&&<div style={{textAlign:"center",padding:"20px 0"}}><p style={{fontSize:32,margin:"0 0 8px"}}>🌱</p><p style={{fontFamily:FR,fontSize:13,fontWeight:500,color:C.textMuted,fontStyle:"italic"}}>Log at least 5 days to unlock your personal insights</p></div>}
         {ins.map((x,i)=>(
           <div key={i} style={{display:"flex",gap:14,padding:"14px 0",borderBottom:`1px solid ${C.borderSoft}`}}>
             <span style={{fontSize:26}}>{x.icon}</span>
-            <p style={{fontFamily:F,fontSize:13,color:C.text,margin:0,lineHeight:1.7}}>{x.text}</p>
+            <p style={{fontFamily:FR,fontSize:13,fontWeight:500,color:C.text,margin:0,lineHeight:1.7}}>{x.text}</p>
           </div>
         ))}
       </Card>
-      <Card>
-        <Title>Export Data</Title>
-        <p style={{fontFamily:F,fontSize:13,color:C.textSoft,marginBottom:14}}>Download all your data as a CSV.</p>
-        <button onClick={()=>doCSV(data)} style={{width:"100%",padding:"14px",borderRadius:14,border:"none",background:`linear-gradient(135deg,${C.blushDeep},#a04070)`,color:"#fff",fontFamily:F,fontSize:14,fontWeight:700,cursor:"pointer"}}>Download CSV</button>
-      </Card>
-      {notes.length>0&&(
-        <Card>
-          <Title>Your Journal 📖</Title>
-          {notes.slice().reverse().map(([dt,d],i)=>(
-            <div key={i} style={{padding:"14px 0",borderBottom:`1px solid ${C.borderSoft}`}}>
-              <p style={{fontFamily:F,fontSize:10,letterSpacing:"0.08em",textTransform:"uppercase",color:C.textLight,margin:"0 0 8px"}}>{dt}</p>
-              {d.morningNote&&<p style={{fontFamily:F,fontSize:13,color:C.textSoft,margin:"0 0 5px",lineHeight:1.6}}>🌅 {d.morningNote}</p>}
-              {d.notes&&<p style={{fontFamily:F,fontSize:13,color:C.textSoft,margin:0,lineHeight:1.6}}>📝 {d.notes}</p>}
-            </div>
-          ))}
-        </Card>
-      )}
+
+      <CardWhite>
+        <H1 italic>Export Your Data</H1>
+        <p style={{fontFamily:FR,fontSize:13,fontWeight:500,color:C.textMuted,marginBottom:14}}>Download everything as a CSV — great for your doctor or as a backup.</p>
+        <button onClick={()=>doCSV(data)} style={{width:"100%",padding:"15px",borderRadius:14,border:"none",background:`linear-gradient(135deg,${C.coral},#a84820)`,color:"#fff",fontFamily:FR,fontSize:12,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",cursor:"pointer",boxShadow:"0 4px 14px rgba(197,90,48,0.3)"}}>
+          Download CSV
+        </button>
+      </CardWhite>
+
+      {notes.length>0&&<CardWhite>
+        <H1 italic>Your Journal 📖</H1>
+        {notes.slice().reverse().map(([dt,d],i)=>(
+          <div key={i} style={{padding:"14px 0",borderBottom:`1px solid ${C.borderSoft}`}}>
+            <p style={{fontFamily:FR,fontSize:9,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",color:C.textMuted,margin:"0 0 8px"}}>{dt}</p>
+            {d.morningNote&&<p style={{fontFamily:FR,fontSize:13,fontWeight:500,color:C.textSoft,margin:"0 0 5px",lineHeight:1.6}}>🌅 {d.morningNote}</p>}
+            {d.notes&&<p style={{fontFamily:FR,fontSize:13,fontWeight:500,color:C.textSoft,margin:0,lineHeight:1.6}}>📝 {d.notes}</p>}
+          </div>
+        ))}
+      </CardWhite>}
     </div>
   );
 }
@@ -972,45 +882,41 @@ function App() {
   const [off,setOff]=useState(0);
 
   useEffect(()=>{
-    const d=loadD();
-    migrate(d);
-    setDataRaw(loadD());
-    setProfileRaw(loadP());
+    const d=loadD(); migrate(d);
+    setDataRaw(loadD()); setProfileRaw(loadP());
   },[]);
 
   function setData(d){setDataRaw(d);saveD(d);}
   function setProfile(p){setProfileRaw(p);saveP(p);}
-
-  function goDay(delta){
-    const n=off+delta;
-    if(n>0) return;
-    setOff(n); setSel(offDay(n));
-  }
+  function goDay(delta){const n=off+delta;if(n>0)return;setOff(n);setSel(offDay(n));}
 
   const ents=Object.entries(data).sort(([a],[b])=>a.localeCompare(b));
 
   return (
-    <div style={{background:C.bg,minHeight:"100vh",fontFamily:F}}>
-      <div style={{background:"rgba(253,246,240,0.96)",backdropFilter:"blur(10px)",borderBottom:`1px solid ${C.border}`,padding:"16px 20px 0",position:"sticky",top:0,zIndex:100}}>
+    <div style={{background:C.bg,minHeight:"100vh",fontFamily:FR}}>
+      {/* Header */}
+      <div style={{background:"rgba(232,223,240,0.96)",backdropFilter:"blur(10px)",borderBottom:`1px solid ${C.border}`,padding:"16px 20px 0",position:"sticky",top:0,zIndex:100}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
-          <p style={{fontFamily:FS,fontSize:22,color:C.text,margin:0,fontWeight:500}}>My Health 🌸</p>
-          <p style={{fontFamily:F,fontSize:10,color:C.textLight,margin:0,letterSpacing:"0.06em",textTransform:"uppercase"}}>private</p>
+          <p style={{fontFamily:FP,fontSize:22,fontWeight:600,color:C.plum,margin:0}}>My Health</p>
+          <p style={{fontFamily:FR,fontSize:9,fontWeight:700,color:C.textMuted,margin:0,letterSpacing:"0.16em",textTransform:"uppercase"}}>Private</p>
         </div>
         <div style={{display:"flex",gap:0,overflowX:"auto",marginLeft:-4}}>
           {TABS.map((t,i)=>(
-            <button key={i} onClick={()=>setTab(i)} style={{padding:"8px 11px",borderRadius:"12px 12px 0 0",border:"none",background:tab===i?"#fff":"transparent",color:tab===i?C.blushDeep:C.textLight,fontFamily:F,fontSize:11,fontWeight:tab===i?700:400,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0,borderBottom:tab===i?`2px solid ${C.blushDeep}`:"2px solid transparent"}}>
+            <button key={i} onClick={()=>setTab(i)} style={{padding:"8px 12px",borderRadius:"12px 12px 0 0",border:"none",background:tab===i?"rgba(255,255,255,0.6)":"transparent",color:tab===i?C.coral:C.lavDark,fontFamily:FR,fontSize:11,fontWeight:700,letterSpacing:"0.06em",cursor:"pointer",whiteSpace:"nowrap",flexShrink:0,borderBottom:tab===i?`2px solid ${C.coral}`:"2px solid transparent",transition:"all 0.2s"}}>
               {TAB_ICONS[i]} {t}
             </button>
           ))}
         </div>
       </div>
+
+      {/* Content */}
       <div style={{padding:"16px 16px 100px",maxWidth:500,margin:"0 auto"}}>
         {tab===0&&<Home data={data} profile={profile} setTab={setTab}/>}
         {tab===1&&<Log data={data} setData={setData} profile={profile} setProfile={setProfile} sel={sel} off={off} goDay={goDay}/>}
         {tab===2&&<Sleep entries={ents}/>}
         {tab===3&&<Fitness data={data}/>}
         {tab===4&&<Body data={data} setData={setData} profile={profile} setProfile={setProfile}/>}
-        {tab===5&&<Insightz data={data} profile={profile}/>}
+        {tab===5&&<Insights data={data} profile={profile}/>}
       </div>
     </div>
   );
